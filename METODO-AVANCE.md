@@ -104,6 +104,12 @@ Texto libre: qué falta, bloqueantes, decisiones abiertas.
 `0` nada · `0.25` typecheck + lint · `0.5` rules-tests / unit · `0.75` E2E manual
 una vez · `1` E2E verificado con fecha reciente **y** CI verde.
 
+### Escala del eje "Deploy / producción"
+
+`0` no desplegado · `0.5` desplegado a mano · `0.75` desplegado + accesible con
+dominio/HTTPS · `1` deploy automático desde git **y** monitoreo de errores activo
+(ver Base del repo, §10).
+
 ## 6. El scorecard: el control de sanidad
 
 Las capacidades miden de abajo hacia arriba (lo que existe). El scorecard lo
@@ -135,3 +141,47 @@ En el monorepo, cada app lleva su bloque `PROGRESO` en el **§11 de su spec**
 (`docs/specs/<slug>.md`), no en un `ESTADO.md` propio. El `ESTADO.md` de la raíz
 es el índice: una fila de scorecard por app. La primera sesión que toque una app
 convierte el §11 de esa spec al formato de la tabla del §5.
+
+## 10. Base del repo — OBLIGATORIO
+
+Independiente de las capacidades. Todo repo con código desplegable debe cumplir
+esto **antes de que `fase` pueda pasar de 1 a 2**:
+
+| # | Requisito | Por qué |
+|---|---|---|
+| 1 | **CI**: GitHub Actions corre lint + typecheck + build en cada push | un build roto lo marca una máquina, no tú abriendo la app |
+| 2 | **`main` protegida**: nada de push directo; los cambios entran por PR (aunque sea a ti mismo) con CI verde | compuerta + hábito de revisión |
+| 3 | **`.env.example`** completo + 5–10 líneas de "cómo levantar esto" en el README | tú en 3 meses, o una sesión nueva, no re-descubre variables |
+| 4 | **`LICENSE`** — propietario o abierto, explícito | sin licencia nadie (ni un socio futuro) puede usar el código legalmente |
+| 5 | **Secretos documentados**: dónde viven, quién los tiene, cómo se rotan | nada de secretos en git salvo excepción escrita |
+| 6 | **Monitoreo de errores** en el deploy (Sentry free, o el snippet de Phrourós) | si truena para un usuario, te enteras |
+| 7 | **Deploy reproducible**: automático desde git, o un comando único documentado | nada de "me acuerdo cómo se hacía" |
+
+Herramientas 100% internas: los ejes/ítems de "monetización / legal" no aplican
+(se marcan N/A), pero **1–3 y 5–7 siguen siendo obligatorios**. La `LICENSE`
+también (aunque sea "propietario, uso interno Atik").
+
+Se registra en `ESTADO.md` con este bloque:
+
+```markdown
+## Base del repo
+
+<!-- BASE:START -->
+| Requisito | Estado |
+|---|---|
+| CI (lint + typecheck + build) | pendiente |
+| main protegida / PR obligatorio | pendiente |
+| .env.example + setup en README | pendiente |
+| LICENSE | pendiente |
+| Secretos documentados | pendiente |
+| Monitoreo de errores en el deploy | pendiente |
+| Deploy reproducible | pendiente |
+<!-- BASE:END -->
+```
+
+Estados: `ok` · `parcial` · `pendiente` · `N/A`.
+
+**Reglas duras:**
+- `fase_objetivo` no sube a 2 con la Base incompleta.
+- El eje "Deploy / producción" no llega a `1` sin monitoreo de errores + deploy
+  automático (ítems 6 y 7 en `ok`).
