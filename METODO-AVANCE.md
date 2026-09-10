@@ -150,7 +150,7 @@ esto **antes de que `fase` pueda pasar de 1 a 2**:
 | # | Requisito | Por qué |
 |---|---|---|
 | 1 | **CI**: GitHub Actions corre lint + typecheck + build en cada push | un build roto lo marca una máquina, no tú abriendo la app |
-| 2 | **`main` protegida**: nada de push directo; los cambios entran por PR (aunque sea a ti mismo) con CI verde | compuerta + hábito de revisión |
+| 2 | **`main` protegida**: como mínimo bloquear force-push y borrado de rama; idealmente PR con CI verde | compuerta + hábito de revisión |
 | 3 | **`.env.example`** completo + 5–10 líneas de "cómo levantar esto" en el README | tú en 3 meses, o una sesión nueva, no re-descubre variables |
 | 4 | **`LICENSE`** — propietario o abierto, explícito | sin licencia nadie (ni un socio futuro) puede usar el código legalmente |
 | 5 | **Secretos documentados**: dónde viven, quién los tiene, cómo se rotan | nada de secretos en git salvo excepción escrita |
@@ -185,3 +185,8 @@ Estados: `ok` · `parcial` · `pendiente` · `N/A`.
 - `fase_objetivo` no sube a 2 con la Base incompleta.
 - El eje "Deploy / producción" no llega a `1` sin monitoreo de errores + deploy
   automático (ítems 6 y 7 en `ok`).
+
+> **Nota (2026-09-09):** la protección de rama en repos **privados** requiere
+> GitHub Pro ($4/mes) o hacer el repo público. Mientras tanto el ítem 2 se
+> marca `parcial` (la disciplina + CI hacen de compuerta). Alternativa gratis:
+> `gh` rulesets tampoco cubre privados en el plan Free.
