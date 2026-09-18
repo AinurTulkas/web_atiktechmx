@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Panel de licencias — MiRebranda</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px; background: #f5f5f7; color: #1a1a1a;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #666; font-size: 13px; margin: 0 0 24px; }
+  .card {
+    background: #fff; border: 1px solid #e2e2e5; border-radius: 10px;
+    padding: 20px; max-width: 720px; margin: 0 0 20px;
+  }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+  input, select {
+    width: 100%; padding: 9px 10px; border: 1px solid #d0d0d5; border-radius: 6px;
+    font-size: 14px;
+  }
+  button {
+    margin-top: 16px; padding: 10px 18px; border: none; border-radius: 6px;
+    background: #142B31; color: #fff; font-size: 14px; font-weight: 600;
+    cursor: pointer;
+  }
+  button.ghost { background: transparent; color: #142B31; border: 1px solid #d0d0d5; }
+  button.danger { background: #b3261e; }
+  button:disabled { opacity: .5; cursor: default; }
+  #login-error, #crear-error { color: #b3261e; font-size: 13px; margin-top: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #eee; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+  .pill.activo { background: #dcf5e3; color: #1a7a3a; }
+  .pill.inactivo { background: #f5dcdc; color: #a12a2a; }
+  code { background: #f0f0f2; padding: 2px 6px; border-radius: 4px; font-size: 12.5px; }
+  #app { display: none; }
+</style>
+</head>
+<body>
+
+<h1>Panel de licencias — MiRebranda</h1>
+<p class="sub">Interno, Atik Tech. No indexado.</p>
+
+<div id="login" class="card">
+  <label for="login-email">Correo</label>
+  <input id="login-email" type="email" autocomplete="username">
+  <label for="login-pass">Contraseña</label>
+  <input id="login-pass" type="password" autocomplete="current-password">
+  <button id="btn-login">Entrar</button>
+  <div id="login-error"></div>
+</div>
+
+<div id="app">
+  <div class="card">
+    <strong>Nueva licencia</strong>
+    <label for="c-agencia">Agencia</label>
+    <input id="c-agencia" type="text" placeholder="Nombre de la agencia">
+    <label for="c-plan">Plan</label>
+    <select id="c-plan">
+      <option value="mensual">Mensual</option>
+      <option value="anual">Anual</option>
+      <option value="perpetua">Perpetua (pago único)</option>
+    </select>
+    <label for="c-max">Máximo de equipos</label>
+    <input id="c-max" type="number" min="1" value="1">
+    <button id="btn-crear">Generar código</button>
+    <div id="crear-error"></div>
+  </div>
+
+  <div class="card">
+    <strong>Licencias existentes</strong>
+    <table id="tabla-licencias">
+      <thead>
+        <tr><th>Código</th><th>Agencia</th><th>Plan</th><th>Equipos</th><th>Estado</th><th></th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <button class="ghost" id="btn-logout">Salir</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut,
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  getFirestore, collection, doc, setDoc, getDocs, updateDoc, orderBy, query,
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+// Config pública del proyecto (no es secreta: la seguridad la dan las
+// reglas de Firestore + el login de Auth, no esta config).
+const firebaseConfig = {
+  apiKey: "AIzaSyDuZ6fRRHxh4lEF3jarhsGQSirR4VyOXXg",
+  authDomain: "postup-app.firebaseapp.com",
+  projectId: "postup-app",
+  storageBucket: "postup-app.firebasestorage.app",
+  messagingSenderId: "385978510703",
+  appId: "1:385978510703:web:490ee62405629fd9b10c9a",
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const $ = (id) => document.getElementById(id);
+
+$("btn-login").addEventListener("click", async () => {
+  $("login-error").textContent = "";
+  try {
+    await signInWithEmailAndPassword(auth, $("login-email").value.trim(), $("login-pass").value);
+  } catch (e) {
+    $("login-error").textContent = "No se pudo iniciar sesión: " + e.message;
+  }
+});
+
+$("btn-logout").addEventListener("click", () => signOut(auth));
+
+onAuthStateChanged(auth, (user) => {
+  $("login").style.display = user ? "none" : "block";
+  $("app").style.display = user ? "block" : "none";
+  if (user) cargarLicencias();
+});
+
+function generarCodigo() {
+  // Legible para transcribir a mano: MIRE-XXXX-XXXX (sin 0/O/1/I para no confundir).
+  const alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bloque = () => Array.from({ length: 4 }, () => alfabeto[Math.floor(Math.random() * alfabeto.length)]).join("");
+  return `MIRE-${bloque()}-${bloque()}`;
+}
+
+$("btn-crear").addEventListener("click", async () => {
+  $("crear-error").textContent = "";
+  const agencia = $("c-agencia").value.trim();
+  const maxEquipos = parseInt($("c-max").value, 10);
+  if (!agencia || !maxEquipos || maxEquipos < 1) {
+    $("crear-error").textContent = "Completá agencia y un máximo de equipos válido.";
+    return;
+  }
+  const codigo = generarCodigo();
+  try {
+    await setDoc(doc(db, "licencias", codigo), {
+      agencia,
+      plan: $("c-plan").value,
+      max_equipos: maxEquipos,
+      equipos: [],
+      activo: true,
+      creado: new Date().toISOString(),
+    });
+    $("c-agencia").value = "";
+    alert("Código generado: " + codigo + "\n\nCopialo, no se vuelve a mostrar en ningún otro lado (pero queda visible en la tabla de abajo).");
+    cargarLicencias();
+  } catch (e) {
+    $("crear-error").textContent = "No se pudo crear la licencia: " + e.message;
+  }
+});
+
+async function cargarLicencias() {
+  const tbody = document.querySelector("#tabla-licencias tbody");
+  tbody.innerHTML = "<tr><td colspan='6'>Cargando…</td></tr>";
+  const snap = await getDocs(query(collection(db, "licencias"), orderBy("creado", "desc")));
+  tbody.innerHTML = "";
+  snap.forEach((d) => {
+    const l = d.data();
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><code>${d.id}</code></td>
+      <td>${l.agencia ?? ""}</td>
+      <td>${l.plan ?? ""}</td>
+      <td>${(l.equipos ?? []).length} / ${l.max_equipos ?? "?"}</td>
+      <td><span class="pill ${l.activo ? "activo" : "inactivo"}">${l.activo ? "Activa" : "Desactivada"}</span></td>
+      <td></td>
+    `;
+    const btnToggle = document.createElement("button");
+    btnToggle.className = l.activo ? "danger" : "ghost";
+    btnToggle.textContent = l.activo ? "Desactivar" : "Reactivar";
+    btnToggle.addEventListener("click", async () => {
+      await updateDoc(doc(db, "licencias", d.id), { activo: !l.activo });
+      cargarLicencias();
+    });
+    tr.lastElementChild.appendChild(btnToggle);
+    tbody.appendChild(tr);
+  });
+  if (snap.empty) tbody.innerHTML = "<tr><td colspan='6'>Todavía no hay licencias creadas.</td></tr>";
+}
+</script>
+</body>
+</html>
