@@ -12,6 +12,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
   }
 
+  document.querySelectorAll('.tab-switch').forEach(switcher => {
+    const btns = switcher.querySelectorAll('.tab-btn');
+    btns.forEach(btn => btn.addEventListener('click', () => {
+      btns.forEach(b => { b.classList.toggle('active', b === btn); b.setAttribute('aria-selected', b === btn); });
+      const name = btn.dataset.tab;
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
+      history.replaceState(null, '', '#' + name);
+    }));
+  });
+  const tabFromHash = document.querySelector('.tab-btn[data-tab="' + location.hash.slice(1) + '"]');
+  if (tabFromHash) tabFromHash.click();
+
   document.querySelectorAll('.carousel').forEach(carousel => {
     const track = carousel.querySelector('.carousel-track');
     const prev = carousel.querySelector('.carousel-prev');

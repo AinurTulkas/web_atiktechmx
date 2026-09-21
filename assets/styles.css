@@ -272,6 +272,17 @@ footer{border-top:1px solid rgba(197,206,219,0.12);padding:48px 24px 32px;}
   padding-top:24px;border-top:1px solid rgba(197,206,219,0.08);
 }
 
+/* Tabs + prose (páginas de guía) */
+.tab-switch{display:flex;gap:12px;margin-bottom:44px;flex-wrap:wrap;}
+.tab-btn.active{background:linear-gradient(90deg,var(--cyan),var(--violet-2));color:var(--navy);border-color:transparent;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+.prose{max-width:680px;}
+.prose h2{font-size:1.4rem;margin:44px 0 14px;}
+.prose h2:first-of-type{margin-top:0;}
+.prose p{margin-bottom:16px;font-size:0.98rem;}
+.prose .steps{margin:24px 0 8px;}
+
 /* Mobile */
 @media(max-width:820px){
   .cat-grid,.values-grid,.contact-grid,.steps,.pricing-tiers,.service-includes{grid-template-columns:1fr;}
