@@ -1,0 +1,1064 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Control de Publicaciones — Cherry Travels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --brand-pink: #FF8BC2;
+  --brand-red: #F5343A;
+  --brand-gold: #DBA200;
+  --brand-olive: #9BA96B;
+  --surface-100: #FFFCF9;
+  --surface-200: #FFF3E3;
+  --ink: #4A2620;
+  --ink-muted: #8A6A63;
+
+  /* Colores funcionales del embudo — deliberadamente distintos de la marca,
+     para que un vistazo al tablero diga "en qué etapa está esto" sin
+     confundirse con acentos decorativos. */
+  --etapa-nueva: #8B5CF6;
+  --etapa-revisada: #3B82F6;
+  --etapa-programada: #22C55E;
+  --etapa-publicada: var(--brand-gold);
+  --color-atrasada: var(--brand-red);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Nunito', sans-serif;
+  background: var(--surface-200);
+  color: var(--ink);
+}
+
+h1, h2, .marca { font-family: 'Baloo 2', sans-serif; }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  border-radius: 10px;
+  background: var(--surface-100);
+  color: var(--ink);
+  padding: 8px 14px;
+  font-weight: 700;
+}
+button:hover { filter: brightness(0.97); }
+
+input, textarea, select {
+  font-family: inherit;
+  border: 1px solid #E7D3CE;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  width: 100%;
+}
+
+/* ---------- Login ---------- */
+.pantalla-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, var(--brand-pink), var(--surface-200) 60%);
+}
+.tarjeta-login {
+  background: var(--surface-100);
+  padding: 36px 32px;
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(74,38,32,0.18);
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.tarjeta-login h1 { margin: 0; font-size: 22px; }
+.tarjeta-login .subt { margin: -8px 0 8px; color: var(--ink-muted); font-weight: 700; }
+.tarjeta-login label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; }
+.tarjeta-login button[type="submit"] {
+  background: var(--brand-red);
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  margin-top: 4px;
+}
+.error-msg { color: var(--brand-red); font-size: 13px; margin: 0; }
+
+/* ---------- App shell ---------- */
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 20px;
+  background: var(--surface-100);
+  border-bottom: 2px solid var(--surface-200);
+  flex-wrap: wrap;
+}
+.marca { font-weight: 800; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+.marca-punto {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-pink), var(--brand-red));
+}
+
+.vistas { display: flex; gap: 6px; }
+.vista-btn.activa { background: var(--brand-red); color: white; }
+
+.navegacion-fecha { display: flex; align-items: center; gap: 8px; margin-left: auto; font-weight: 700; }
+.navegacion-fecha button { padding: 6px 10px; }
+#etiqueta-fecha { min-width: 160px; text-align: center; text-transform: capitalize; }
+
+.usuario { display: flex; align-items: center; gap: 10px; }
+#usuario-nombre { font-weight: 700; color: var(--ink-muted); }
+
+.contenedor-vista { flex: 1; padding: 20px; overflow: auto; }
+
+/* ---------- Vista Mes ---------- */
+.grid-mes {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+.dia-semana-header {
+  text-align: center;
+  font-weight: 800;
+  color: var(--ink-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  padding-bottom: 4px;
+}
+.celda-mes {
+  background: var(--surface-100);
+  border-radius: 12px;
+  padding: 8px;
+  min-height: 90px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 2px solid transparent;
+}
+.celda-mes:hover { border-color: var(--brand-pink); }
+.celda-mes.fuera-mes { opacity: 0.4; }
+.celda-mes.hoy { border-color: var(--brand-red); }
+.celda-num { font-weight: 800; font-size: 13px; }
+.puntos-etapa { display: flex; flex-wrap: wrap; gap: 4px; }
+.punto { width: 9px; height: 9px; border-radius: 50%; }
+.punto-atrasada { box-shadow: 0 0 0 2px var(--color-atrasada); }
+
+/* ---------- Vista Semana ---------- */
+.grid-semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+.columna-semana {
+  background: var(--surface-100);
+  border-radius: 14px;
+  padding: 10px;
+  cursor: pointer;
+  min-height: 220px;
+  border: 2px solid transparent;
+}
+.columna-semana:hover { border-color: var(--brand-pink); }
+.columna-semana.hoy { border-color: var(--brand-red); }
+.columna-semana-header { font-weight: 800; text-align: center; margin-bottom: 8px; }
+.mini-pila { display: flex; flex-direction: column; gap: 4px; }
+.mini-pill {
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+}
+.mini-pill.atrasada { outline: 2px solid var(--color-atrasada); }
+
+/* ---------- Vista Día: embudo de 4 columnas ---------- */
+.embudo {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(240px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.columna-etapa {
+  background: var(--surface-100);
+  border-radius: 14px;
+  padding: 12px;
+  min-height: 300px;
+}
+.columna-etapa-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 3px solid var(--linea, #ddd);
+}
+.chip-color { width: 12px; height: 12px; border-radius: 4px; }
+.contador-etapa {
+  margin-left: auto;
+  background: var(--surface-200);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 12px;
+}
+
+.tarjeta-post {
+  background: white;
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(74,38,32,0.08);
+  cursor: pointer;
+  border-left: 6px solid var(--linea, #ddd);
+}
+.tarjeta-post.atrasada { box-shadow: 0 0 0 2px var(--color-atrasada); }
+.tarjeta-post img {
+  width: 100%;
+  border-radius: 8px;
+  display: block;
+  margin-bottom: 6px;
+  max-height: 120px;
+  object-fit: cover;
+}
+.tarjeta-post .titulo { font-weight: 800; font-size: 14px; }
+.tarjeta-post .meta { font-size: 12px; color: var(--ink-muted); display: flex; justify-content: space-between; margin-top: 4px; }
+.tarjeta-post .etiqueta-atrasada-mini {
+  color: var(--color-atrasada);
+  font-weight: 800;
+  font-size: 11px;
+}
+.tarjeta-vacio { color: var(--ink-muted); font-size: 13px; text-align: center; padding: 20px 0; }
+
+/* ---------- Modal ---------- */
+.modal-fondo {
+  position: fixed; inset: 0;
+  background: rgba(74,38,32,0.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 50;
+  padding: 20px;
+}
+.modal-caja {
+  background: var(--surface-100);
+  border-radius: 18px;
+  padding: 24px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+}
+.modal-cerrar {
+  position: absolute; top: 12px; right: 12px;
+  background: transparent; font-size: 16px; padding: 4px 8px;
+}
+.modal-imagen { width: 100%; border-radius: 12px; margin-bottom: 12px; max-height: 220px; object-fit: cover; }
+.modal-campos { display: flex; flex-direction: column; gap: 10px; }
+.modal-campos label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; }
+.fila-2 { flex-direction: row !important; gap: 10px !important; }
+.fila-2 span { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.fila-check { flex-direction: row !important; align-items: center; gap: 8px !important; }
+.fila-check input { width: auto; }
+.hint { font-weight: 400; color: var(--ink-muted); font-size: 12px; }
+
+.chips-plataformas { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-plataforma {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface-200);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.chip-plataforma input { width: auto; margin: 0; }
+
+.etapa-actual { font-size: 13px; display: flex; align-items: center; gap: 8px; }
+.pill-atrasada {
+  background: var(--color-atrasada);
+  color: white;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.botones-etapa { display: flex; flex-wrap: wrap; gap: 6px; }
+.botones-etapa button { color: white; font-size: 12px; padding: 6px 10px; }
+
+.modal-acciones { display: flex; justify-content: space-between; margin-top: 16px; }
+.btn-primario { background: var(--brand-red); color: white; }
+.btn-peligro { background: transparent; color: var(--brand-red); }
+.guardar-msg { font-size: 13px; color: var(--etapa-programada); margin-top: 8px; }
+
+/* ---------- Usuarios ---------- */
+.lista-usuarios { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+.fila-usuario { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.fila-usuario .correo { color: var(--ink-muted); flex: 1; }
+.form-nuevo-usuario { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border-top: 2px solid var(--surface-200); padding-top: 14px; }
+.form-nuevo-usuario button { grid-column: span 2; background: var(--brand-red); color: white; }
+
+@media (max-width: 720px) {
+  .embudo { grid-template-columns: 1fr; }
+  .grid-semana { grid-template-columns: 1fr; }
+  .topbar { gap: 10px; }
+  .navegacion-fecha { margin-left: 0; }
+}
+
+</style>
+</head>
+<body>
+
+  <!-- ---------- Pantalla de acceso ---------- -->
+  <div id="pantalla-login" class="pantalla-login">
+    <form id="form-login" class="tarjeta-login">
+      <h1>Control de Publicaciones</h1>
+      <p class="subt">Cherry Travels</p>
+      <label>Correo
+        <input type="email" id="login-email" required autocomplete="username" />
+      </label>
+      <label>Contraseña
+        <input type="password" id="login-password" required autocomplete="current-password" />
+      </label>
+      <button type="submit">Entrar</button>
+      <p id="login-error" class="error-msg" hidden></p>
+    </form>
+  </div>
+
+  <!-- ---------- App ---------- -->
+  <div id="app" class="app" hidden>
+
+    <header class="topbar">
+      <div class="marca">
+        <span class="marca-punto"></span>
+        Control de Publicaciones
+      </div>
+
+      <nav class="vistas">
+        <button class="vista-btn" data-vista="mes">Mes</button>
+        <button class="vista-btn" data-vista="semana">Semana</button>
+        <button class="vista-btn" data-vista="dia">Día</button>
+      </nav>
+
+      <div class="navegacion-fecha">
+        <button id="btn-anterior" title="Anterior">‹</button>
+        <span id="etiqueta-fecha"></span>
+        <button id="btn-siguiente" title="Siguiente">›</button>
+        <button id="btn-hoy">Hoy</button>
+      </div>
+
+      <div class="usuario">
+        <button id="btn-recargar" title="Recargar datos">⟳ Recargar</button>
+        <span id="usuario-nombre"></span>
+        <button id="btn-usuarios" hidden>Usuarios</button>
+        <button id="btn-salir">Salir</button>
+      </div>
+    </header>
+
+    <p id="carga-error" class="error-msg" hidden></p>
+    <main id="contenedor-vista" class="contenedor-vista"></main>
+
+  </div>
+
+  <!-- ---------- Modal: detalle / edición de publicación ---------- -->
+  <div id="modal-post" class="modal-fondo" hidden>
+    <div class="modal-caja">
+      <button class="modal-cerrar" id="modal-cerrar">✕</button>
+      <img id="modal-imagen" class="modal-imagen" alt="" />
+      <div class="modal-campos">
+        <label>Título
+          <input type="text" id="campo-titulo" />
+        </label>
+        <label>Plataformas / canal
+          <div id="campo-plataformas" class="chips-plataformas"></div>
+        </label>
+        <label>Otra <span class="hint">(si no está en la lista, separadas por coma)</span>
+          <input type="text" id="campo-plataforma-otra" placeholder="Ej. Threads" />
+        </label>
+        <label>Fuente / operador
+          <input type="text" id="campo-fuente" />
+        </label>
+        <label class="fila-2">
+          <span>Fecha programada
+            <input type="date" id="campo-fecha" />
+          </span>
+          <span>Hora
+            <input type="time" id="campo-hora" />
+          </span>
+        </label>
+        <label>Copy
+          <textarea id="campo-copy" rows="4"></textarea>
+        </label>
+        <label>Notas internas
+          <textarea id="campo-notas" rows="2"></textarea>
+        </label>
+        <label class="fila-check">
+          <input type="checkbox" id="campo-destacado" />
+          Destacado
+        </label>
+
+        <div class="etapa-actual">
+          Etapa: <strong id="etapa-actual-texto"></strong>
+          <span id="etiqueta-atrasada" class="pill-atrasada" hidden>Atrasada</span>
+        </div>
+
+        <div class="botones-etapa" id="botones-etapa"></div>
+      </div>
+
+      <div class="modal-acciones">
+        <button id="btn-eliminar" class="btn-peligro" hidden>Eliminar</button>
+        <button id="btn-guardar" class="btn-primario">Guardar</button>
+      </div>
+      <p id="guardar-msg" class="guardar-msg" hidden></p>
+    </div>
+  </div>
+
+  <!-- ---------- Panel de usuarios (solo admin) ---------- -->
+  <div id="modal-usuarios" class="modal-fondo" hidden>
+    <div class="modal-caja">
+      <button class="modal-cerrar" id="usuarios-cerrar">✕</button>
+      <h2>Usuarios</h2>
+      <p class="hint">
+        Para dar de alta un acceso nuevo, primero créalo en la consola de Firebase
+        (Authentication → Agregar usuario) y luego agrégalo aquí con su rol.
+      </p>
+      <div id="lista-usuarios" class="lista-usuarios"></div>
+      <form id="form-nuevo-usuario" class="form-nuevo-usuario">
+        <input type="text" id="nu-uid" placeholder="UID de Firebase Auth" required />
+        <input type="text" id="nu-nombre" placeholder="Nombre" required />
+        <input type="email" id="nu-email" placeholder="Correo" required />
+        <select id="nu-rol">
+          <option value="agente">Agente</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button type="submit">Agregar</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+// ============================================================================
+// Control de Publicaciones — Cherry Travels
+// Frontend estático (sin build step) conectado directo al proyecto de
+// Firebase que ya usa MiRebranda. No hay backend propio: Firebase Auth +
+// Firestore son el backend (no se usa Firebase Storage — las imágenes
+// viajan embebidas como data URI dentro del propio documento de Firestore).
+// ============================================================================
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc,
+  deleteDoc, serverTimestamp, Timestamp, query, where
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+// ---------------------------------------------------------------------------
+// 1) Datos del proyecto de Firebase ("postup-app", el mismo que ya usa
+//    MiRebranda — Configuración del proyecto → Tus apps → Config del
+//    SDK). Estos valores NO son secretos: Firebase los protege con las
+//    reglas de seguridad de Firestore (viven en el repo de MiRebranda,
+//    no aquí), no ocultando este objeto.
+// ---------------------------------------------------------------------------
+const firebaseConfig = {
+  apiKey: "AIzaSyDuZ6fRRHxh4lEF3jarhsGQSirR4VyOXXg",
+  authDomain: "postup-app.firebaseapp.com",
+  projectId: "postup-app",
+  storageBucket: "postup-app.firebasestorage.app",
+  messagingSenderId: "385978510703",
+  appId: "1:385978510703:web:490ee62405629fd9b10c9a",
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ---------------------------------------------------------------------------
+// Configuración del embudo — un solo lugar para nombres y colores de etapa.
+// Cambiar el "label" de una etapa no afecta nada más.
+// ---------------------------------------------------------------------------
+const ESTADOS = [
+  { id: "por_disenar", label: "Por diseñar", color: "#8B5CF6" },
+  { id: "revisada",    label: "Revisada",    color: "#3B82F6" },
+  { id: "programada",  label: "Programada",  color: "#22C55E" },
+  { id: "publicada",   label: "Publicada",   color: "#DBA200" },
+];
+const COLOR_ATRASADA = "#F5343A";
+const HORAS_ATRASO_PROGRAMADA = 2;
+const HORAS_ATRASO_POR_DISENAR_REVISADA = 24;
+
+// Catálogo fijo de plataformas/canales — se muestran como chips
+// seleccionables en el modal en vez de texto libre. "Reels" se deja como
+// su propio chip porque aquí lo usan para distinguir el formato (reel)
+// de una publicación normal de feed, no como una red social distinta.
+const PLATAFORMAS_DISPONIBLES = ["Instagram", "Facebook", "TikTok", "Reels", "WhatsApp"];
+
+// MiRebranda es un producto con varias agencias clientes, y TODAS escriben
+// en la misma colección "posts" (proyecto "postup-app"), distinguidas por
+// este campo. Este calendario es solo para Cherry Travels, así que CADA
+// lectura de "posts" debe llevar este filtro — sin él se verían (o se
+// podrían editar) publicaciones de otras agencias.
+const AGENCIA = "Cherry Travels";
+
+function estadoInfo(id) {
+  return ESTADOS.find(e => e.id === id) || ESTADOS[0];
+}
+function siguienteEstado(id) {
+  const i = ESTADOS.findIndex(e => e.id === id);
+  return i >= 0 && i < ESTADOS.length - 1 ? ESTADOS[i + 1].id : null;
+}
+
+// ---------------------------------------------------------------------------
+// Estado en memoria (todo se trae una vez y se guarda explícitamente —
+// no hay listeners en tiempo real, tal como se pidió).
+// ---------------------------------------------------------------------------
+const estadoApp = {
+  usuarioUid: null,
+  usuarioRol: null,
+  usuarioNombre: "",
+  posts: [],       // arreglo de {id, ...datos}
+  usuarios: [],    // arreglo de {id, ...datos}
+  vista: "mes",    // 'mes' | 'semana' | 'dia'
+  fechaAncla: new Date(),
+  postSeleccionado: null,
+};
+
+// ============================================================================
+// AUTENTICACIÓN
+// ============================================================================
+const elLogin = document.getElementById("pantalla-login");
+const elApp = document.getElementById("app");
+const formLogin = document.getElementById("form-login");
+const loginError = document.getElementById("login-error");
+
+formLogin.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  loginError.hidden = true;
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (err) {
+    loginError.textContent = "Correo o contraseña incorrectos.";
+    loginError.hidden = false;
+  }
+});
+
+document.getElementById("btn-salir").addEventListener("click", () => signOut(auth));
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    elApp.hidden = true;
+    elLogin.hidden = false;
+    return;
+  }
+
+  const refUsuario = doc(db, "usuarios", user.uid);
+  const snapUsuario = await getDoc(refUsuario);
+
+  if (!snapUsuario.exists() || snapUsuario.data().activo !== true) {
+    loginError.textContent = "Tu cuenta no tiene acceso activo a esta herramienta.";
+    loginError.hidden = false;
+    await signOut(auth);
+    return;
+  }
+
+  const datosUsuario = snapUsuario.data();
+  estadoApp.usuarioUid = user.uid;
+  estadoApp.usuarioRol = datosUsuario.rol;
+  estadoApp.usuarioNombre = datosUsuario.nombre || user.email;
+
+  document.getElementById("usuario-nombre").textContent =
+    `${estadoApp.usuarioNombre} (${datosUsuario.rol})`;
+  document.getElementById("btn-usuarios").hidden = datosUsuario.rol !== "admin";
+
+  elLogin.hidden = true;
+  elApp.hidden = false;
+
+  await cargarDatos();
+  render();
+});
+
+// ============================================================================
+// CARGA DE DATOS (fetch manual — sin listeners en tiempo real)
+// ============================================================================
+async function cargarDatos() {
+  const elError = document.getElementById("carga-error");
+  if (elError) elError.hidden = true;
+  try {
+    // Las reglas de Firestore solo permiten "list" sobre "usuarios" a un
+    // admin — pedirlo siempre (incluso como "agente") tira un error de
+    // permisos y, sin este try/catch, se caía toda la carga (posts incluidos).
+    const esAdmin = estadoApp.usuarioRol === "admin";
+    const [snapPosts, snapUsuarios] = await Promise.all([
+      getDocs(query(collection(db, "posts"), where("agencia", "==", AGENCIA))),
+      esAdmin ? getDocs(collection(db, "usuarios")) : Promise.resolve(null),
+    ]);
+    estadoApp.posts = snapPosts.docs.map(d => ({ id: d.id, ...d.data() }));
+    estadoApp.usuarios = esAdmin ? snapUsuarios.docs.map(d => ({ id: d.id, ...d.data() })) : [];
+  } catch (err) {
+    estadoApp.posts = [];
+    estadoApp.usuarios = [];
+    if (elError) {
+      elError.textContent = "No se pudieron cargar los datos. Intenta de nuevo (botón Recargar) o avisa a Malthus si sigue pasando.";
+      elError.hidden = false;
+    }
+  }
+}
+
+document.getElementById("btn-recargar").addEventListener("click", async () => {
+  await cargarDatos();
+  render();
+});
+
+// ============================================================================
+// LÓGICA DE FECHAS / ATRASO
+// ============================================================================
+
+// Un post "vive" en el día de su fecha programada si ya la tiene;
+// si no, vive en el día en que se creó (así un post "por diseñar" aparece
+// hoy, y al programarse se mueve visualmente a su fecha de publicación).
+function fechaDelPost(post) {
+  if (post.fechaProgramada) return post.fechaProgramada.toDate();
+  if (post.creadoEn) return post.creadoEn.toDate();
+  return new Date();
+}
+
+function esAtrasada(post) {
+  const ahora = Date.now();
+  if (post.estado === "programada" && post.fechaProgramada) {
+    const limite = post.fechaProgramada.toDate().getTime() + HORAS_ATRASO_PROGRAMADA * 3600 * 1000;
+    return ahora > limite;
+  }
+  if (post.estado === "por_disenar" || post.estado === "revisada") {
+    const base = post.actualizadoEn ? post.actualizadoEn.toDate().getTime() : ahora;
+    return ahora - base > HORAS_ATRASO_POR_DISENAR_REVISADA * 3600 * 1000;
+  }
+  return false;
+}
+
+function mismoDia(a, b) {
+  return a.getFullYear() === b.getFullYear() &&
+         a.getMonth() === b.getMonth() &&
+         a.getDate() === b.getDate();
+}
+
+function postsDelDia(fecha) {
+  return estadoApp.posts.filter(p => mismoDia(fechaDelPost(p), fecha));
+}
+
+const NOMBRES_MES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const NOMBRES_DIA_CORTO = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+
+// ============================================================================
+// NAVEGACIÓN ENTRE VISTAS
+// ============================================================================
+document.querySelectorAll(".vista-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    estadoApp.vista = btn.dataset.vista;
+    render();
+  });
+});
+
+document.getElementById("btn-anterior").addEventListener("click", () => moverFecha(-1));
+document.getElementById("btn-siguiente").addEventListener("click", () => moverFecha(1));
+document.getElementById("btn-hoy").addEventListener("click", () => {
+  estadoApp.fechaAncla = new Date();
+  render();
+});
+
+function moverFecha(direccion) {
+  const f = new Date(estadoApp.fechaAncla);
+  if (estadoApp.vista === "mes") f.setMonth(f.getMonth() + direccion);
+  else if (estadoApp.vista === "semana") f.setDate(f.getDate() + direccion * 7);
+  else f.setDate(f.getDate() + direccion);
+  estadoApp.fechaAncla = f;
+  render();
+}
+
+function irADia(fecha) {
+  estadoApp.fechaAncla = fecha;
+  estadoApp.vista = "dia";
+  render();
+}
+
+// ============================================================================
+// RENDER PRINCIPAL
+// ============================================================================
+const contenedor = document.getElementById("contenedor-vista");
+
+function render() {
+  document.querySelectorAll(".vista-btn").forEach(b =>
+    b.classList.toggle("activa", b.dataset.vista === estadoApp.vista)
+  );
+
+  if (estadoApp.vista === "mes") { renderEtiquetaFecha(); renderMes(); }
+  else if (estadoApp.vista === "semana") { renderEtiquetaFecha(); renderSemana(); }
+  else { renderEtiquetaFecha(); renderDia(); }
+}
+
+function renderEtiquetaFecha() {
+  const f = estadoApp.fechaAncla;
+  const el = document.getElementById("etiqueta-fecha");
+  if (estadoApp.vista === "mes") {
+    el.textContent = `${NOMBRES_MES[f.getMonth()]} ${f.getFullYear()}`;
+  } else if (estadoApp.vista === "semana") {
+    const inicio = inicioDeSemana(f);
+    const fin = new Date(inicio); fin.setDate(fin.getDate() + 6);
+    el.textContent = `${inicio.getDate()} – ${fin.getDate()} ${NOMBRES_MES[fin.getMonth()]} ${fin.getFullYear()}`;
+  } else {
+    el.textContent = `${f.getDate()} ${NOMBRES_MES[f.getMonth()]} ${f.getFullYear()}`;
+  }
+}
+
+function inicioDeSemana(fecha) {
+  const f = new Date(fecha);
+  const dia = f.getDay(); // 0=domingo
+  const offset = dia === 0 ? -6 : 1 - dia; // semana que empieza en lunes
+  f.setDate(f.getDate() + offset);
+  f.setHours(0,0,0,0);
+  return f;
+}
+
+// ---------------------------------------------------------------------------
+// VISTA MES — resumen por puntos de color, sin abrir el embudo completo
+// ---------------------------------------------------------------------------
+function renderMes() {
+  const f = estadoApp.fechaAncla;
+  const primerDiaMes = new Date(f.getFullYear(), f.getMonth(), 1);
+  const inicioGrid = inicioDeSemana(primerDiaMes);
+  const hoy = new Date();
+
+  let html = `<div class="grid-mes">`;
+  NOMBRES_DIA_CORTO.forEach(n => html += `<div class="dia-semana-header">${n}</div>`);
+
+  for (let i = 0; i < 42; i++) {
+    const dia = new Date(inicioGrid);
+    dia.setDate(dia.getDate() + i);
+    const fueraDeMes = dia.getMonth() !== f.getMonth();
+    const esHoy = mismoDia(dia, hoy);
+    const posts = postsDelDia(dia);
+
+    const puntos = ESTADOS.map(estado => {
+      const enEstaEtapa = posts.filter(p => p.estado === estado.id);
+      if (enEstaEtapa.length === 0) return "";
+      const atrasada = enEstaEtapa.some(esAtrasada);
+      return `<span class="punto ${atrasada ? "punto-atrasada" : ""}" style="background:${estado.color}" title="${estado.label}: ${enEstaEtapa.length}"></span>`;
+    }).join("");
+
+    html += `
+      <div class="celda-mes ${fueraDeMes ? "fuera-mes" : ""} ${esHoy ? "hoy" : ""}" data-fecha="${dia.toISOString()}">
+        <div class="celda-num">${dia.getDate()}</div>
+        <div class="puntos-etapa">${puntos}</div>
+      </div>`;
+  }
+  html += `</div>`;
+  contenedor.innerHTML = html;
+
+  contenedor.querySelectorAll(".celda-mes").forEach(celda => {
+    celda.addEventListener("click", () => irADia(new Date(celda.dataset.fecha)));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// VISTA SEMANA — un paso intermedio de detalle: conteos por etapa por día
+// ---------------------------------------------------------------------------
+function renderSemana() {
+  const inicio = inicioDeSemana(estadoApp.fechaAncla);
+  const hoy = new Date();
+
+  let html = `<div class="grid-semana">`;
+  for (let i = 0; i < 7; i++) {
+    const dia = new Date(inicio);
+    dia.setDate(dia.getDate() + i);
+    const esHoy = mismoDia(dia, hoy);
+    const posts = postsDelDia(dia);
+
+    const pills = ESTADOS.map(estado => {
+      const enEstaEtapa = posts.filter(p => p.estado === estado.id);
+      if (enEstaEtapa.length === 0) return "";
+      const atrasada = enEstaEtapa.some(esAtrasada);
+      return `<div class="mini-pill ${atrasada ? "atrasada" : ""}" style="background:${estado.color}">
+                <span>${estado.label}</span><span>${enEstaEtapa.length}</span>
+              </div>`;
+    }).join("");
+
+    html += `
+      <div class="columna-semana ${esHoy ? "hoy" : ""}" data-fecha="${dia.toISOString()}">
+        <div class="columna-semana-header">${NOMBRES_DIA_CORTO[dia.getDay()]} ${dia.getDate()}</div>
+        <div class="mini-pila">${pills || '<p class="tarjeta-vacio">Sin actividad</p>'}</div>
+      </div>`;
+  }
+  html += `</div>`;
+  contenedor.innerHTML = html;
+
+  contenedor.querySelectorAll(".columna-semana").forEach(col => {
+    col.addEventListener("click", () => irADia(new Date(col.dataset.fecha)));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// VISTA DÍA — el embudo completo de 4 etapas, a todo lo ancho
+// ---------------------------------------------------------------------------
+function renderDia() {
+  const posts = postsDelDia(estadoApp.fechaAncla);
+
+  let html = `<div class="embudo">`;
+  ESTADOS.forEach(estado => {
+    const enEstaEtapa = posts.filter(p => p.estado === estado.id);
+    html += `
+      <div class="columna-etapa">
+        <div class="columna-etapa-header" style="--linea:${estado.color}">
+          <span class="chip-color" style="background:${estado.color}"></span>
+          ${estado.label}
+          <span class="contador-etapa">${enEstaEtapa.length}</span>
+        </div>
+        ${enEstaEtapa.map(p => tarjetaHtml(p, estado.color)).join("") || '<p class="tarjeta-vacio">Sin publicaciones</p>'}
+      </div>`;
+  });
+  html += `</div>`;
+  contenedor.innerHTML = html;
+
+  contenedor.querySelectorAll(".tarjeta-post").forEach(el => {
+    el.addEventListener("click", () => abrirModal(el.dataset.id));
+  });
+}
+
+// post.imagenUrl y post.plataformas vienen de Firestore (los escribe
+// MiRebranda, sin login) — no son datos de confianza. Se escapan igual que
+// cualquier otro campo, y la imagen solo se pinta si de verdad es el data
+// URI esperado (nunca una URL remota, ni algo como "javascript:...").
+const PREFIJO_IMAGEN_VALIDO = "data:image/jpeg;base64,";
+
+function tarjetaHtml(post, color) {
+  const atrasada = esAtrasada(post);
+  const hora = post.fechaProgramada
+    ? post.fechaProgramada.toDate().toLocaleString("es-MX", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+    : "";
+  const imagenValida = typeof post.imagenUrl === "string" && post.imagenUrl.startsWith(PREFIJO_IMAGEN_VALIDO);
+  const plataformasTexto = (post.plataformas || []).join(", ");
+  return `
+    <div class="tarjeta-post ${atrasada ? "atrasada" : ""}" style="--linea:${color}" data-id="${escapeHtml(post.id)}">
+      ${imagenValida ? `<img src="${escapeHtml(post.imagenUrl)}" alt="" />` : ""}
+      <div class="titulo">${escapeHtml(post.titulo || "(sin título)")}</div>
+      <div class="meta">
+        <span>${escapeHtml(plataformasTexto)}</span>
+        <span>${escapeHtml(hora)}</span>
+      </div>
+      ${atrasada ? '<div class="etiqueta-atrasada-mini">⚠ Atrasada</div>' : ""}
+    </div>`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+// ============================================================================
+// MODAL DE PUBLICACIÓN — edición manual con botón "Guardar" explícito
+// ============================================================================
+const modalPost = document.getElementById("modal-post");
+
+function abrirModal(postId) {
+  const post = estadoApp.posts.find(p => p.id === postId);
+  if (!post) return;
+  estadoApp.postSeleccionado = post;
+
+  const imagenValidaModal = typeof post.imagenUrl === "string" && post.imagenUrl.startsWith(PREFIJO_IMAGEN_VALIDO);
+  document.getElementById("modal-imagen").src = imagenValidaModal ? post.imagenUrl : "";
+  document.getElementById("modal-imagen").hidden = !imagenValidaModal;
+  document.getElementById("campo-titulo").value = post.titulo || "";
+  renderChipsPlataformas(post.plataformas || []);
+  document.getElementById("campo-fuente").value = post.fuente || "";
+  document.getElementById("campo-copy").value = post.copy || "";
+  document.getElementById("campo-notas").value = post.notas || "";
+  document.getElementById("campo-destacado").checked = !!post.destacado;
+
+  if (post.fechaProgramada) {
+    const d = post.fechaProgramada.toDate();
+    document.getElementById("campo-fecha").value = d.toISOString().slice(0, 10);
+    document.getElementById("campo-hora").value = d.toTimeString().slice(0, 5);
+  } else {
+    document.getElementById("campo-fecha").value = "";
+    document.getElementById("campo-hora").value = "";
+  }
+
+  const info = estadoInfo(post.estado);
+  document.getElementById("etapa-actual-texto").textContent = info.label;
+  document.getElementById("etiqueta-atrasada").hidden = !esAtrasada(post);
+
+  // Botones para mover de etapa (avanzar es el caso normal; también se
+  // permite regresar una etapa por si algo se movió por error).
+  const contBotones = document.getElementById("botones-etapa");
+  contBotones.innerHTML = "";
+  const idxActual = ESTADOS.findIndex(e => e.id === post.estado);
+  ESTADOS.forEach((estado, idx) => {
+    if (idx === idxActual) return;
+    const btn = document.createElement("button");
+    btn.textContent = idx > idxActual ? `Mover a ${estado.label} →` : `← Regresar a ${estado.label}`;
+    btn.style.background = estado.color;
+    btn.addEventListener("click", () => moverEtapa(post.id, estado.id));
+    contBotones.appendChild(btn);
+  });
+
+  document.getElementById("btn-eliminar").hidden = estadoApp.usuarioRol !== "admin";
+  document.getElementById("guardar-msg").hidden = true;
+  modalPost.hidden = false;
+}
+
+// Dibuja los chips seleccionables de plataforma/canal, marcando los que
+// ya tenga el post. Cualquier valor que el post tuviera y que ya no esté
+// en el catálogo fijo (ej. algo escrito a mano antes de este cambio) se
+// conserva en el campo "otra" para no perder el dato.
+function renderChipsPlataformas(seleccionadas) {
+  const cont = document.getElementById("campo-plataformas");
+  const desconocidas = seleccionadas.filter(p => !PLATAFORMAS_DISPONIBLES.includes(p));
+  cont.innerHTML = PLATAFORMAS_DISPONIBLES.map(p => `
+    <label class="chip-plataforma">
+      <input type="checkbox" value="${p}" ${seleccionadas.includes(p) ? "checked" : ""}/>
+      ${p}
+    </label>
+  `).join("");
+  document.getElementById("campo-plataforma-otra").value = desconocidas.join(", ");
+}
+
+function leerPlataformasSeleccionadas() {
+  const marcadas = Array.from(
+    document.querySelectorAll('#campo-plataformas input[type="checkbox"]:checked')
+  ).map(input => input.value);
+  const otras = document.getElementById("campo-plataforma-otra").value
+    .split(",").map(s => s.trim()).filter(Boolean);
+  return [...marcadas, ...otras];
+}
+
+document.getElementById("modal-cerrar").addEventListener("click", () => modalPost.hidden = true);
+
+document.getElementById("btn-guardar").addEventListener("click", async () => {
+  const post = estadoApp.postSeleccionado;
+  if (!post) return;
+
+  const fechaVal = document.getElementById("campo-fecha").value;
+  const horaVal = document.getElementById("campo-hora").value;
+  let fechaProgramada = null;
+  if (fechaVal) {
+    const [h, m] = (horaVal || "00:00").split(":");
+    const d = new Date(fechaVal);
+    d.setHours(Number(h), Number(m), 0, 0);
+    fechaProgramada = Timestamp.fromDate(d);
+  }
+
+  const cambios = {
+    titulo: document.getElementById("campo-titulo").value.trim(),
+    plataformas: leerPlataformasSeleccionadas(),
+    fuente: document.getElementById("campo-fuente").value.trim(),
+    copy: document.getElementById("campo-copy").value,
+    notas: document.getElementById("campo-notas").value,
+    destacado: document.getElementById("campo-destacado").checked,
+    fechaProgramada,
+    actualizadoEn: serverTimestamp(),
+    ultimoEditor: estadoApp.usuarioUid,
+  };
+
+  await updateDoc(doc(db, "posts", post.id), cambios);
+  Object.assign(post, cambios, { actualizadoEn: Timestamp.now() }); // reflejo local inmediato
+
+  const msg = document.getElementById("guardar-msg");
+  msg.textContent = "Guardado ✓";
+  msg.hidden = false;
+  render();
+});
+
+document.getElementById("btn-eliminar").addEventListener("click", async () => {
+  const post = estadoApp.postSeleccionado;
+  if (!post) return;
+  if (!confirm(`¿Eliminar "${post.titulo}"? Esta acción no se puede deshacer.`)) return;
+  await deleteDoc(doc(db, "posts", post.id));
+  estadoApp.posts = estadoApp.posts.filter(p => p.id !== post.id);
+  modalPost.hidden = true;
+  render();
+});
+
+async function moverEtapa(postId, nuevoEstado) {
+  const post = estadoApp.posts.find(p => p.id === postId);
+  if (!post) return;
+  await updateDoc(doc(db, "posts", postId), {
+    estado: nuevoEstado,
+    actualizadoEn: serverTimestamp(),
+    ultimoEditor: estadoApp.usuarioUid,
+  });
+  post.estado = nuevoEstado;
+  post.actualizadoEn = Timestamp.now();
+  modalPost.hidden = true;
+  render();
+}
+
+// ============================================================================
+// PANEL DE USUARIOS (solo admin)
+// ============================================================================
+const modalUsuarios = document.getElementById("modal-usuarios");
+
+document.getElementById("btn-usuarios").addEventListener("click", () => {
+  renderListaUsuarios();
+  modalUsuarios.hidden = false;
+});
+document.getElementById("usuarios-cerrar").addEventListener("click", () => modalUsuarios.hidden = true);
+
+function renderListaUsuarios() {
+  const cont = document.getElementById("lista-usuarios");
+  cont.innerHTML = estadoApp.usuarios.map(u => `
+    <div class="fila-usuario" data-uid="${escapeHtml(u.id)}">
+      <strong>${escapeHtml(u.nombre || u.id)}</strong>
+      <span class="correo">${escapeHtml(u.email || "")}</span>
+      <select class="u-rol">
+        <option value="agente" ${u.rol === "agente" ? "selected" : ""}>Agente</option>
+        <option value="admin" ${u.rol === "admin" ? "selected" : ""}>Admin</option>
+      </select>
+      <label><input type="checkbox" class="u-activo" ${u.activo ? "checked" : ""}/> Activo</label>
+      <button class="u-guardar">Guardar</button>
+    </div>
+  `).join("");
+
+  cont.querySelectorAll(".fila-usuario").forEach(fila => {
+    fila.querySelector(".u-guardar").addEventListener("click", async () => {
+      const uid = fila.dataset.uid;
+      const rol = fila.querySelector(".u-rol").value;
+      const activo = fila.querySelector(".u-activo").checked;
+      await updateDoc(doc(db, "usuarios", uid), { rol, activo });
+      const u = estadoApp.usuarios.find(x => x.id === uid);
+      if (u) { u.rol = rol; u.activo = activo; }
+    });
+  });
+}
+
+document.getElementById("form-nuevo-usuario").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const uid = document.getElementById("nu-uid").value.trim();
+  const nombre = document.getElementById("nu-nombre").value.trim();
+  const email = document.getElementById("nu-email").value.trim();
+  const rol = document.getElementById("nu-rol").value;
+
+  // Este calendario es solo para el equipo de Cherry Travels, así que la
+  // agencia va fija (AGENCIA) — es el campo que las reglas de Firestore
+  // comparan contra "posts.agencia" para el filtro multi-agencia.
+  await setDoc(doc(db, "usuarios", uid), { nombre, email, rol, activo: true, agencia: AGENCIA });
+  estadoApp.usuarios.push({ id: uid, nombre, email, rol, activo: true, agencia: AGENCIA });
+  renderListaUsuarios();
+  e.target.reset();
+});
+
+</script>
+</body>
+</html>
