@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const prev = carousel.querySelector('.carousel-prev');
     const next = carousel.querySelector('.carousel-next');
     if (!track) return;
-    const scrollAmount = 200;
+    const scrollAmount = carousel.classList.contains('carousel-shots') ? track.clientWidth * 0.9 : 200;
     if (prev) prev.addEventListener('click', () => track.scrollBy({ left: -scrollAmount, behavior: 'smooth' }));
     if (next) next.addEventListener('click', () => track.scrollBy({ left: scrollAmount, behavior: 'smooth' }));
   });

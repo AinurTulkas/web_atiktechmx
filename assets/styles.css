@@ -151,6 +151,10 @@ header{
   display:flex;align-items:center;justify-content:center;
   color:rgba(197,206,219,0.5);font-size:0.85rem;text-align:center;padding:12px;
 }
+.app-body,.carousel{min-width:0;}
+.carousel-shots .carousel-slide{flex:0 0 min(100%,480px);width:min(100%,480px);height:auto;flex-direction:column;gap:8px;padding:8px;margin:0;}
+.carousel-shots .carousel-slide img{width:100%;height:auto;border-radius:8px;display:block;}
+.carousel-shots figcaption{font-size:0.8rem;color:var(--gray-on-dark);}
 .carousel-arrows{display:flex;gap:8px;margin-top:10px;}
 .carousel-arrows button{
   width:32px;height:32px;border-radius:50%;border:1px solid rgba(197,206,219,0.3);
@@ -287,7 +291,7 @@ footer{border-top:1px solid rgba(197,206,219,0.12);padding:48px 24px 32px;}
 @media(max-width:820px){
   .cat-grid,.values-grid,.contact-grid,.steps,.pricing-tiers,.service-includes{grid-template-columns:1fr;}
   .app-card{grid-template-columns:1fr;}
-  .app-identity{flex-direction:row;justify-content:flex-start;text-align:left;}
+  .app-identity{flex-direction:row;flex-wrap:wrap;justify-content:flex-start;text-align:left;}
   .app-downloads{flex-direction:row;flex-wrap:wrap;}
   .nav-links{
     position:fixed;top:64px;left:0;right:0;background:var(--navy);
