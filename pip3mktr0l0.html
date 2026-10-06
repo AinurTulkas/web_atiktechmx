@@ -318,6 +318,12 @@ input, textarea, select {
   .navegacion-fecha { margin-left: 0; }
 }
 
+/* El atributo hidden debe ganar siempre: .modal-fondo y .app definen display y lo anulaban */
+[hidden] { display: none !important; }
+.form-msg { grid-column: span 2; margin: 0; font-size: 13px; }
+.form-msg.ok { color: var(--brand-olive); }
+.form-msg.error { color: var(--brand-red); }
+
 </style>
 </head>
 <body>
@@ -444,7 +450,8 @@ input, textarea, select {
           <option value="agente">Agente</option>
           <option value="admin">Admin</option>
         </select>
-        <button type="submit">Agregar</button>
+        <button type="submit" id="nu-boton">Agregar</button>
+        <p id="nu-msg" class="form-msg" hidden></p>
       </form>
     </div>
   </div>
@@ -553,7 +560,14 @@ formLogin.addEventListener("submit", async (e) => {
   try {
     await signInWithEmailAndPassword(auth, email, password);
   } catch (err) {
-    loginError.textContent = "Correo o contraseña incorrectos.";
+    const code = err && err.code ? err.code : "";
+    if (code === "auth/network-request-failed") {
+      loginError.textContent = "Sin conexión con Firebase. Revisa tu internet e intenta de nuevo.";
+    } else if (code === "auth/too-many-requests") {
+      loginError.textContent = "Demasiados intentos. Espera unos minutos e intenta de nuevo.";
+    } else {
+      loginError.textContent = "Correo o contraseña incorrectos.";
+    }
     loginError.hidden = false;
   }
 });
@@ -568,7 +582,15 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   const refUsuario = doc(db, "usuarios", user.uid);
-  const snapUsuario = await getDoc(refUsuario);
+  let snapUsuario;
+  try {
+    snapUsuario = await getDoc(refUsuario);
+  } catch (err) {
+    loginError.textContent = "No se pudo verificar tu acceso. Intenta de nuevo en un momento.";
+    loginError.hidden = false;
+    await signOut(auth);
+    return;
+  }
 
   if (!snapUsuario.exists() || snapUsuario.data().activo !== true) {
     loginError.textContent = "Tu cuenta no tiene acceso activo a esta herramienta.";
@@ -649,6 +671,14 @@ function esAtrasada(post) {
     return ahora - base > HORAS_ATRASO_POR_DISENAR_REVISADA * 3600 * 1000;
   }
   return false;
+}
+
+// Fecha local como "YYYY-MM-DD" para <input type="date"> (toISOString() usa UTC
+// y en México corría al día siguiente cualquier hora después de las 18:00).
+function fechaLocalISO(d) {
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
 function mismoDia(a, b) {
@@ -889,7 +919,7 @@ function abrirModal(postId) {
 
   if (post.fechaProgramada) {
     const d = post.fechaProgramada.toDate();
-    document.getElementById("campo-fecha").value = d.toISOString().slice(0, 10);
+    document.getElementById("campo-fecha").value = fechaLocalISO(d);
     document.getElementById("campo-hora").value = d.toTimeString().slice(0, 5);
   } else {
     document.getElementById("campo-fecha").value = "";
@@ -955,8 +985,9 @@ document.getElementById("btn-guardar").addEventListener("click", async () => {
   let fechaProgramada = null;
   if (fechaVal) {
     const [h, m] = (horaVal || "00:00").split(":");
-    const d = new Date(fechaVal);
-    d.setHours(Number(h), Number(m), 0, 0);
+    const [anio, mes, dia] = fechaVal.split("-").map(Number);
+    // new Date("YYYY-MM-DD") se interpreta en UTC y corría el día; se arma local.
+    const d = new Date(anio, mes - 1, dia, Number(h), Number(m), 0, 0);
     fechaProgramada = Timestamp.fromDate(d);
   }
 
@@ -972,10 +1003,17 @@ document.getElementById("btn-guardar").addEventListener("click", async () => {
     ultimoEditor: estadoApp.usuarioUid,
   };
 
-  await updateDoc(doc(db, "posts", post.id), cambios);
+  const msg = document.getElementById("guardar-msg");
+  try {
+    await updateDoc(doc(db, "posts", post.id), cambios);
+  } catch (err) {
+    console.error("Error al guardar publicación:", err);
+    msg.textContent = mensajeErrorFirestore(err);
+    msg.hidden = false;
+    return;
+  }
   Object.assign(post, cambios, { actualizadoEn: Timestamp.now() }); // reflejo local inmediato
 
-  const msg = document.getElementById("guardar-msg");
   msg.textContent = "Guardado ✓";
   msg.hidden = false;
   render();
@@ -985,7 +1023,15 @@ document.getElementById("btn-eliminar").addEventListener("click", async () => {
   const post = estadoApp.postSeleccionado;
   if (!post) return;
   if (!confirm(`¿Eliminar "${post.titulo}"? Esta acción no se puede deshacer.`)) return;
-  await deleteDoc(doc(db, "posts", post.id));
+  try {
+    await deleteDoc(doc(db, "posts", post.id));
+  } catch (err) {
+    console.error("Error al eliminar publicación:", err);
+    const msg = document.getElementById("guardar-msg");
+    msg.textContent = mensajeErrorFirestore(err);
+    msg.hidden = false;
+    return;
+  }
   estadoApp.posts = estadoApp.posts.filter(p => p.id !== post.id);
   modalPost.hidden = true;
   render();
@@ -994,11 +1040,19 @@ document.getElementById("btn-eliminar").addEventListener("click", async () => {
 async function moverEtapa(postId, nuevoEstado) {
   const post = estadoApp.posts.find(p => p.id === postId);
   if (!post) return;
-  await updateDoc(doc(db, "posts", postId), {
-    estado: nuevoEstado,
-    actualizadoEn: serverTimestamp(),
-    ultimoEditor: estadoApp.usuarioUid,
-  });
+  try {
+    await updateDoc(doc(db, "posts", postId), {
+      estado: nuevoEstado,
+      actualizadoEn: serverTimestamp(),
+      ultimoEditor: estadoApp.usuarioUid,
+    });
+  } catch (err) {
+    console.error("Error al mover de etapa:", err);
+    const msg = document.getElementById("guardar-msg");
+    msg.textContent = mensajeErrorFirestore(err);
+    msg.hidden = false;
+    return;
+  }
   post.estado = nuevoEstado;
   post.actualizadoEn = Timestamp.now();
   modalPost.hidden = true;
@@ -1036,27 +1090,97 @@ function renderListaUsuarios() {
       const uid = fila.dataset.uid;
       const rol = fila.querySelector(".u-rol").value;
       const activo = fila.querySelector(".u-activo").checked;
-      await updateDoc(doc(db, "usuarios", uid), { rol, activo });
-      const u = estadoApp.usuarios.find(x => x.id === uid);
-      if (u) { u.rol = rol; u.activo = activo; }
+      const previo = estadoApp.usuarios.find(x => x.id === uid);
+      if (rol === "admin" && (!previo || previo.rol !== "admin")) {
+        mostrarMsgUsuario("El rol admin se asigna solo a Malthus, directo en Firestore.", false);
+        return;
+      }
+      try {
+        await updateDoc(doc(db, "usuarios", uid), { rol, activo });
+        const u = estadoApp.usuarios.find(x => x.id === uid);
+        if (u) { u.rol = rol; u.activo = activo; }
+        mostrarMsgUsuario("Cambios guardados ✓", true);
+      } catch (err) {
+        console.error("Error al guardar usuario:", err);
+        mostrarMsgUsuario(mensajeErrorFirestore(err), false);
+      }
     });
   });
 }
 
+function mensajeErrorFirestore(err) {
+  const code = err && err.code ? err.code : "";
+  if (code === "permission-denied") {
+    return "Firestore no permite esta acción con tu usuario (permission-denied). Avisa a quien mantiene las reglas de MiRebranda; no se puede resolver desde esta página.";
+  }
+  if (code === "unavailable") {
+    return "Sin conexión con Firestore. Revisa tu internet e intenta de nuevo.";
+  }
+  return "No se pudo completar la acción" + (code ? " (" + code + ")" : "") + ". Intenta de nuevo.";
+}
+
+function mostrarMsgUsuario(texto, ok) {
+  const msg = document.getElementById("nu-msg");
+  msg.textContent = texto;
+  msg.className = "form-msg " + (ok ? "ok" : "error");
+  msg.hidden = false;
+}
+
 document.getElementById("form-nuevo-usuario").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const form = e.target;
+  const boton = document.getElementById("nu-boton");
   const uid = document.getElementById("nu-uid").value.trim();
   const nombre = document.getElementById("nu-nombre").value.trim();
   const email = document.getElementById("nu-email").value.trim();
   const rol = document.getElementById("nu-rol").value;
 
-  // Este calendario es solo para el equipo de Cherry Travels, así que la
-  // agencia va fija (AGENCIA) — es el campo que las reglas de Firestore
-  // comparan contra "posts.agencia" para el filtro multi-agencia.
-  await setDoc(doc(db, "usuarios", uid), { nombre, email, rol, activo: true, agencia: AGENCIA });
-  estadoApp.usuarios.push({ id: uid, nombre, email, rol, activo: true, agencia: AGENCIA });
-  renderListaUsuarios();
-  e.target.reset();
+  // Regla fija del proyecto: admin solo para Malthus. Cualquier otro
+  // acceso nuevo se da de alta como agente desde esta pantalla.
+  if (rol === "admin") {
+    mostrarMsgUsuario("El rol admin se asigna solo a Malthus, directo en Firestore. Aquí agrega al resto como Agente.", false);
+    return;
+  }
+
+  // setDoc REEMPLAZA el documento entero: si el UID ya existe (p. ej. Malthus),
+  // agregarlo otra vez como "agente" le quitaría el rol admin. Se bloquea.
+  if (estadoApp.usuarios.some(u => u.id === uid)) {
+    mostrarMsgUsuario("Ese UID ya está en la lista. Para cambiarlo usa el botón Guardar de su fila.", false);
+    return;
+  }
+
+  boton.disabled = true;
+  mostrarMsgUsuario("Guardando…", true);
+  try {
+    // Este calendario es solo para el equipo de Cherry Travels, así que la
+    // agencia va fija (AGENCIA) — es el campo que las reglas de Firestore
+    // comparan contra "posts.agencia" para el filtro multi-agencia.
+    await setDoc(doc(db, "usuarios", uid), { nombre, email, rol, activo: true, agencia: AGENCIA });
+    estadoApp.usuarios.push({ id: uid, nombre, email, rol, activo: true, agencia: AGENCIA });
+    renderListaUsuarios();
+    form.reset();
+    mostrarMsgUsuario("Usuario agregado ✓", true);
+  } catch (err) {
+    console.error("Error al agregar usuario:", err);
+    mostrarMsgUsuario(mensajeErrorFirestore(err), false);
+  } finally {
+    boton.disabled = false;
+  }
+});
+
+// ============================================================================
+// CERRAR MODALES: tecla Escape y clic en el fondo oscuro
+// ============================================================================
+function cerrarModalesAbiertos() {
+  modalUsuarios.hidden = true;
+  modalPost.hidden = true;
+}
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") cerrarModalesAbiertos();
+});
+[modalPost, modalUsuarios].forEach(fondo => {
+  // solo si el clic fue en el fondo mismo, no dentro de la caja
+  fondo.addEventListener("click", (e) => { if (e.target === fondo) fondo.hidden = true; });
 });
 
 </script>
