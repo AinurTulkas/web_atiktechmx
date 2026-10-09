@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
 <meta name="robots" content="noindex, nofollow" />
 <title>Control de Publicaciones — Cherry Travels</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -10,56 +11,112 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
+  color-scheme: light;
+
   --brand-pink: #FF8BC2;
   --brand-red: #F5343A;
   --brand-gold: #DBA200;
   --brand-olive: #9BA96B;
+
   --surface-100: #FFFCF9;
   --surface-200: #FFF3E3;
+  --card: #FFFFFF;
   --ink: #4A2620;
-  --ink-muted: #8A6A63;
+  --ink-muted: #6E4F48;
+  --line: #D9BFB8;
+  --overlay: rgba(74, 38, 32, 0.45);
+  --sombra: rgba(74, 38, 32, 0.12);
 
-  /* Colores funcionales del embudo — deliberadamente distintos de la marca,
-     para que un vistazo al tablero diga "en qué etapa está esto" sin
-     confundirse con acentos decorativos. */
-  --etapa-nueva: #8B5CF6;
-  --etapa-revisada: #3B82F6;
-  --etapa-programada: #22C55E;
-  --etapa-publicada: var(--brand-gold);
-  --color-atrasada: var(--brand-red);
+  /* Rojo de acción: texto blanco encima ≥ 4.5:1; como texto sobre superficie también */
+  --accion: #C41E25;
+  --accion-fg: #FFFFFF;
+  --danger-text: #C41E25;
+  --ok-text: #2F6B2A;
+  --foco: #1D4ED8;
+
+  /* Colores funcionales del embudo, cada uno con su color de texto (contraste ≥ 4.5:1).
+     Deliberadamente distintos de la marca. Además cada etapa lleva un icono y
+     un nombre: el color nunca es la única señal. */
+  --etapa-por_disenar: #6D28D9;  --etapa-por_disenar-fg: #FFFFFF;
+  --etapa-revisada:    #1D4ED8;  --etapa-revisada-fg:    #FFFFFF;
+  --etapa-programada:  #15803D;  --etapa-programada-fg:  #FFFFFF;
+  --etapa-publicada:   #DBA200;  --etapa-publicada-fg:   #1F0F0C;
+  --color-atrasada: #C41E25;
+
+  --login-grad: linear-gradient(160deg, var(--brand-pink), var(--surface-200) 60%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface-100: #241417;
+    --surface-200: #1A0F11;
+    --card: #301B1F;
+    --ink: #FBEFE8;
+    --ink-muted: #D8B3AA;
+    --line: #5A3A40;
+    --overlay: rgba(0, 0, 0, 0.62);
+    --sombra: rgba(0, 0, 0, 0.5);
+
+    --accion: #D12A31;
+    --accion-fg: #FFFFFF;
+    --danger-text: #FF8085;
+    --ok-text: #8FD68A;
+    --foco: #8DB8FF;
+
+    --etapa-por_disenar: #A78BFA;  --etapa-por_disenar-fg: #1B1030;
+    --etapa-revisada:    #7FB0FF;  --etapa-revisada-fg:    #0B1B3A;
+    --etapa-programada:  #5FD38D;  --etapa-programada-fg:  #0B2A18;
+    --etapa-publicada:   #F0B400;  --etapa-publicada-fg:   #2A1A00;
+    --color-atrasada: #FF8085;
+
+    --login-grad: linear-gradient(160deg, #4A1F36, var(--surface-200) 60%);
+  }
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: 'Nunito', sans-serif;
+  font-family: 'Nunito', system-ui, sans-serif;
   background: var(--surface-200);
   color: var(--ink);
 }
 
-h1, h2, .marca { font-family: 'Baloo 2', sans-serif; }
+h1, h2, .marca { font-family: 'Baloo 2', system-ui, sans-serif; }
 
 button {
   font-family: inherit;
+  font-size: 14px;
   cursor: pointer;
   border: none;
   border-radius: 10px;
-  background: var(--surface-100);
+  background: var(--surface-200);
   color: var(--ink);
   padding: 8px 14px;
+  min-height: 36px;
   font-weight: 700;
 }
-button:hover { filter: brightness(0.97); }
+button:hover { filter: brightness(0.96); }
 
 input, textarea, select {
   font-family: inherit;
-  border: 1px solid #E7D3CE;
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 14px;
   width: 100%;
+  background: var(--surface-100);
+  color: var(--ink);
 }
+::placeholder { color: var(--ink-muted); opacity: 0.8; }
+
+/* Foco visible con teclado en todo lo interactivo */
+:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offset: 0; }
 
 /* ---------- Login ---------- */
 .pantalla-login {
@@ -67,29 +124,40 @@ input, textarea, select {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(160deg, var(--brand-pink), var(--surface-200) 60%);
+  padding: 24px 16px;
+  background: var(--login-grad);
 }
 .tarjeta-login {
   background: var(--surface-100);
   padding: 36px 32px;
   border-radius: 20px;
-  box-shadow: 0 12px 30px rgba(74,38,32,0.18);
-  width: 320px;
+  box-shadow: 0 12px 30px var(--sombra);
+  width: 100%;
+  max-width: 340px;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
-.tarjeta-login h1 { margin: 0; font-size: 22px; }
+.tarjeta-login h1 { margin: 0; font-size: 22px; text-wrap: balance; }
 .tarjeta-login .subt { margin: -8px 0 8px; color: var(--ink-muted); font-weight: 700; }
 .tarjeta-login label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; }
 .tarjeta-login button[type="submit"] {
-  background: var(--brand-red);
-  color: white;
+  background: var(--accion);
+  color: var(--accion-fg);
   padding: 10px;
+  min-height: 44px;
   border-radius: 10px;
   margin-top: 4px;
 }
-.error-msg { color: var(--brand-red); font-size: 13px; margin: 0; }
+.error-msg { color: var(--danger-text); font-size: 13px; font-weight: 700; margin: 0; }
+.ok-msg { color: var(--ok-text); font-size: 13px; font-weight: 700; margin: 0; }
+/* Enlace de "¿Olvidaste tu contraseña?": es un botón (no navega) con aspecto de enlace */
+.enlace-olvido {
+  background: transparent; color: var(--ink-muted);
+  text-decoration: underline; text-underline-offset: 3px;
+  font-weight: 700; font-size: 13px; min-height: 36px; padding: 4px 8px;
+  align-self: center;
+}
 
 /* ---------- App shell ---------- */
 .app { min-height: 100vh; display: flex; flex-direction: column; }
@@ -97,7 +165,7 @@ input, textarea, select {
 .topbar {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px 14px;
   padding: 10px 20px;
   background: var(--surface-100);
   border-bottom: 2px solid var(--surface-200);
@@ -110,21 +178,39 @@ input, textarea, select {
 }
 
 .vistas { display: flex; gap: 6px; }
-.vista-btn.activa { background: var(--brand-red); color: white; }
+.vista-btn[aria-pressed="true"], .vista-btn.activa { background: var(--accion); color: var(--accion-fg); }
 
 .navegacion-fecha { display: flex; align-items: center; gap: 8px; margin-left: auto; font-weight: 700; }
-.navegacion-fecha button { padding: 6px 10px; }
-#etiqueta-fecha { min-width: 160px; text-align: center; text-transform: capitalize; }
+.navegacion-fecha button { padding: 6px 12px; }
+#etiqueta-fecha { min-width: 130px; text-align: center; text-transform: capitalize; }
 
-.usuario { display: flex; align-items: center; gap: 10px; }
+.usuario { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 #usuario-nombre { font-weight: 700; color: var(--ink-muted); }
 
 .contenedor-vista { flex: 1; padding: 20px; overflow: auto; }
 
+/* Leyenda de etapas: nombre + icono + color */
+.leyenda {
+  display: flex; flex-wrap: wrap; gap: 6px 14px;
+  padding: 10px 20px 0;
+  font-size: 12px; font-weight: 700; color: var(--ink-muted);
+}
+.leyenda-item { display: inline-flex; align-items: center; gap: 6px; }
+.leyenda-item .etapa-ico { width: 18px; height: 18px; font-size: 11px; }
+
+.etapa-ico {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: none;
+  border-radius: 5px;
+  font-size: 11px; font-weight: 800; line-height: 1;
+  width: 16px; height: 16px;
+  background: var(--e-bg); color: var(--e-fg);
+}
+
 /* ---------- Vista Mes ---------- */
 .grid-mes {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
 }
 .dia-semana-header {
@@ -133,31 +219,56 @@ input, textarea, select {
   color: var(--ink-muted);
   font-size: 12px;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
   padding-bottom: 4px;
 }
 .celda-mes {
   background: var(--surface-100);
   border-radius: 12px;
   padding: 8px;
-  min-height: 90px;
+  min-height: 96px;
+  min-width: 0;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   border: 2px solid transparent;
 }
 .celda-mes:hover { border-color: var(--brand-pink); }
-.celda-mes.fuera-mes { opacity: 0.4; }
-.celda-mes.hoy { border-color: var(--brand-red); }
+.celda-mes.fuera-mes { opacity: 0.55; }
+.celda-mes.hoy { border-color: var(--accion); }
 .celda-num { font-weight: 800; font-size: 13px; }
-.puntos-etapa { display: flex; flex-wrap: wrap; gap: 4px; }
-.punto { width: 9px; height: 9px; border-radius: 50%; }
-.punto-atrasada { box-shadow: 0 0 0 2px var(--color-atrasada); }
+.celda-mes.hoy .celda-num { color: var(--danger-text); }
+
+/* Escritorio: un chip por publicación (máx. 2) con icono de etapa */
+.chips-mes { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.chip-post {
+  display: flex; align-items: center; gap: 5px;
+  min-width: 0;
+  border-radius: 6px;
+  padding: 2px 6px 2px 3px;
+  font-size: 12px; font-weight: 700; line-height: 1.25;
+  background: var(--e-bg); color: var(--e-fg);
+}
+.chip-post .etapa-ico { background: rgba(255,255,255,0.22); color: inherit; width: 14px; height: 14px; font-size: 10px; }
+.chip-post .chip-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.chip-post.atrasada { outline: 2px solid var(--color-atrasada); outline-offset: 1px; }
+.chips-mas { font-size: 12px; font-weight: 700; color: var(--ink-muted); padding-left: 3px; }
+
+/* Móvil: una insignia por etapa (icono + conteo), sin texto */
+.insignias-mes { display: none; flex-wrap: wrap; gap: 3px; }
+.insignia {
+  display: inline-flex; align-items: center; gap: 2px;
+  border-radius: 6px; padding: 1px 4px;
+  font-size: 12px; font-weight: 800; line-height: 1.3;
+  background: var(--e-bg); color: var(--e-fg);
+}
+.insignia.atrasada { outline: 2px solid var(--color-atrasada); outline-offset: 1px; }
 
 /* ---------- Vista Semana ---------- */
 .grid-semana {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 10px;
 }
 .columna-semana {
@@ -169,19 +280,23 @@ input, textarea, select {
   border: 2px solid transparent;
 }
 .columna-semana:hover { border-color: var(--brand-pink); }
-.columna-semana.hoy { border-color: var(--brand-red); }
+.columna-semana.hoy { border-color: var(--accion); }
 .columna-semana-header { font-weight: 800; text-align: center; margin-bottom: 8px; }
 .mini-pila { display: flex; flex-direction: column; gap: 4px; }
 .mini-pill {
   border-radius: 8px;
   padding: 3px 8px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
-  color: white;
+  background: var(--e-bg);
+  color: var(--e-fg);
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
 }
-.mini-pill.atrasada { outline: 2px solid var(--color-atrasada); }
+.mini-pill .mini-n { margin-left: auto; }
+.mini-pill .etapa-ico { background: rgba(255,255,255,0.22); color: inherit; }
+.mini-pill.atrasada { outline: 2px solid var(--color-atrasada); outline-offset: 1px; }
 
 /* ---------- Vista Día: embudo de 4 columnas ---------- */
 .embudo {
@@ -203,9 +318,10 @@ input, textarea, select {
   font-weight: 800;
   margin-bottom: 10px;
   padding-bottom: 8px;
-  border-bottom: 3px solid var(--linea, #ddd);
+  border-bottom: 3px solid var(--linea, var(--line));
 }
-.chip-color { width: 12px; height: 12px; border-radius: 4px; }
+.columna-etapa-header .etapa-ico { width: 20px; height: 20px; font-size: 12px; }
+.columna-etapa-titulo { margin: 0; font: inherit; font-weight: 800; }
 .contador-etapa {
   margin-left: auto;
   background: var(--surface-200);
@@ -215,13 +331,13 @@ input, textarea, select {
 }
 
 .tarjeta-post {
-  background: white;
+  background: var(--card);
   border-radius: 12px;
   padding: 10px;
   margin-bottom: 10px;
-  box-shadow: 0 2px 6px rgba(74,38,32,0.08);
+  box-shadow: 0 2px 6px var(--sombra);
   cursor: pointer;
-  border-left: 6px solid var(--linea, #ddd);
+  border-left: 6px solid var(--linea, var(--line));
 }
 .tarjeta-post.atrasada { box-shadow: 0 0 0 2px var(--color-atrasada); }
 .tarjeta-post img {
@@ -232,19 +348,19 @@ input, textarea, select {
   max-height: 120px;
   object-fit: cover;
 }
-.tarjeta-post .titulo { font-weight: 800; font-size: 14px; }
-.tarjeta-post .meta { font-size: 12px; color: var(--ink-muted); display: flex; justify-content: space-between; margin-top: 4px; }
+.tarjeta-post .titulo { font-weight: 800; font-size: 14px; overflow-wrap: anywhere; }
+.tarjeta-post .meta { font-size: 12px; color: var(--ink-muted); display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; }
 .tarjeta-post .etiqueta-atrasada-mini {
-  color: var(--color-atrasada);
+  color: var(--danger-text);
   font-weight: 800;
-  font-size: 11px;
+  font-size: 12px;
 }
 .tarjeta-vacio { color: var(--ink-muted); font-size: 13px; text-align: center; padding: 20px 0; }
 
 /* ---------- Modal ---------- */
 .modal-fondo {
   position: fixed; inset: 0;
-  background: rgba(74,38,32,0.45);
+  background: var(--overlay);
   display: flex; align-items: center; justify-content: center;
   z-index: 50;
   padding: 20px;
@@ -259,18 +375,20 @@ input, textarea, select {
   overflow: auto;
   position: relative;
 }
+.modal-caja h2 { margin-top: 0; }
 .modal-cerrar {
-  position: absolute; top: 12px; right: 12px;
-  background: transparent; font-size: 16px; padding: 4px 8px;
+  position: absolute; top: 8px; right: 8px;
+  background: transparent; font-size: 18px; padding: 4px 10px;
+  min-width: 44px; min-height: 44px;
 }
 .modal-imagen { width: 100%; border-radius: 12px; margin-bottom: 12px; max-height: 220px; object-fit: cover; }
 .modal-campos { display: flex; flex-direction: column; gap: 10px; }
 .modal-campos label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; }
 .fila-2 { flex-direction: row !important; gap: 10px !important; }
-.fila-2 span { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.fila-2 span { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .fila-check { flex-direction: row !important; align-items: center; gap: 8px !important; }
 .fila-check input { width: auto; }
-.hint { font-weight: 400; color: var(--ink-muted); font-size: 12px; }
+.hint { font-weight: 400; color: var(--ink-muted); font-size: 13px; }
 
 .chips-plataformas { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip-plataforma {
@@ -280,7 +398,7 @@ input, textarea, select {
   gap: 5px;
   background: var(--surface-200);
   border-radius: 999px;
-  padding: 5px 12px;
+  padding: 6px 12px;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -290,39 +408,86 @@ input, textarea, select {
 .etapa-actual { font-size: 13px; display: flex; align-items: center; gap: 8px; }
 .pill-atrasada {
   background: var(--color-atrasada);
-  color: white;
+  color: var(--surface-200);
   border-radius: 999px;
   padding: 2px 10px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
 }
 .botones-etapa { display: flex; flex-wrap: wrap; gap: 6px; }
-.botones-etapa button { color: white; font-size: 12px; padding: 6px 10px; }
+.botones-etapa button { background: var(--e-bg); color: var(--e-fg); font-size: 13px; padding: 6px 10px; }
 
 .modal-acciones { display: flex; justify-content: space-between; margin-top: 16px; }
-.btn-primario { background: var(--brand-red); color: white; }
-.btn-peligro { background: transparent; color: var(--brand-red); }
-.guardar-msg { font-size: 13px; color: var(--etapa-programada); margin-top: 8px; }
+.btn-primario { background: var(--accion); color: var(--accion-fg); }
+.btn-peligro { background: transparent; color: var(--danger-text); }
+.guardar-msg { font-size: 13px; font-weight: 700; color: var(--ok-text); margin-top: 8px; }
 
 /* ---------- Usuarios ---------- */
 .lista-usuarios { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
-.fila-usuario { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-.fila-usuario .correo { color: var(--ink-muted); flex: 1; }
+.fila-usuario { display: flex; align-items: center; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+.fila-usuario .correo { color: var(--ink-muted); flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .form-nuevo-usuario { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border-top: 2px solid var(--surface-200); padding-top: 14px; }
-.form-nuevo-usuario button { grid-column: span 2; background: var(--brand-red); color: white; }
+.form-nuevo-usuario button { grid-column: span 2; background: var(--accion); color: var(--accion-fg); }
 
+/* Pantallas medianas: Recargar queda solo con icono para que el encabezado no se parta */
+@media (max-width: 1360px) {
+  .txt-recargar { display: none; }
+}
+
+/* ---------- Celular ---------- */
 @media (max-width: 720px) {
+  button { min-height: 44px; }
+
+  /* Encabezado en 3 filas: marca + acciones / vistas / fecha */
+  .topbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px 8px;
+    padding: 10px 16px;
+    align-items: center;
+  }
+  .marca { font-size: 17px; min-width: 0; }
+  .marca-largo { display: none; }
+  .usuario { grid-column: 2; grid-row: 1; gap: 6px; margin-left: 0; }
+  #usuario-nombre { display: none; }
+  .txt-recargar { display: none; }
+  .usuario button { padding: 6px 10px; }
+  .vistas { grid-column: 1 / -1; grid-row: 2; }
+  .vista-btn { flex: 1; }
+  .navegacion-fecha { grid-column: 1 / -1; grid-row: 3; margin-left: 0; }
+  #etiqueta-fecha { flex: 1; min-width: 0; }
+  .navegacion-fecha button { min-width: 44px; }
+
+  .leyenda { padding: 10px 16px 0; }
+  .contenedor-vista { padding: 12px 16px 24px; }
+
+  /* Mes: celdas compactas con insignias en lugar de chips de texto */
+  .grid-mes { gap: 4px; }
+  .celda-mes { min-height: 64px; padding: 5px 3px; gap: 3px; align-items: center; border-radius: 10px; }
+  .celda-num { font-size: 13px; }
+  .chips-mes { display: none; }
+  .insignias-mes { display: flex; justify-content: center; }
+  .dia-semana-header { font-size: 12px; letter-spacing: 0; }
+
   .embudo { grid-template-columns: 1fr; }
   .grid-semana { grid-template-columns: 1fr; }
-  .topbar { gap: 10px; }
-  .navegacion-fecha { margin-left: 0; }
+  .columna-semana { min-height: 0; }
+  .columna-etapa { min-height: 0; }
+  .form-nuevo-usuario { grid-template-columns: 1fr; }
+  .form-nuevo-usuario button, .form-msg { grid-column: auto; }
+  .modal-fondo { padding: 12px; }
+  .modal-caja { padding: 20px 16px; }
 }
 
 /* El atributo hidden debe ganar siempre: .modal-fondo y .app definen display y lo anulaban */
 [hidden] { display: none !important; }
-.form-msg { grid-column: span 2; margin: 0; font-size: 13px; }
-.form-msg.ok { color: var(--brand-olive); }
-.form-msg.error { color: var(--brand-red); }
+.form-msg { grid-column: span 2; margin: 0; font-size: 13px; font-weight: 700; }
+.form-msg.ok { color: var(--ok-text); }
+.form-msg.error { color: var(--danger-text); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
 
 </style>
 </head>
@@ -340,7 +505,9 @@ input, textarea, select {
         <input type="password" id="login-password" required autocomplete="current-password" />
       </label>
       <button type="submit">Entrar</button>
-      <p id="login-error" class="error-msg" hidden></p>
+      <button type="button" id="btn-olvido" class="enlace-olvido">¿Olvidaste tu contraseña?</button>
+      <p id="login-error" class="error-msg" role="alert" hidden></p>
+      <p id="login-info" class="ok-msg" role="status" hidden></p>
     </form>
   </div>
 
@@ -349,40 +516,41 @@ input, textarea, select {
 
     <header class="topbar">
       <div class="marca">
-        <span class="marca-punto"></span>
-        Control de Publicaciones
+        <span class="marca-punto" aria-hidden="true"></span>
+        <span><span class="marca-largo">Control de </span>Publicaciones</span>
       </div>
 
-      <nav class="vistas">
-        <button class="vista-btn" data-vista="mes">Mes</button>
-        <button class="vista-btn" data-vista="semana">Semana</button>
-        <button class="vista-btn" data-vista="dia">Día</button>
+      <nav class="vistas" aria-label="Vista del calendario">
+        <button class="vista-btn" data-vista="mes" aria-pressed="false">Mes</button>
+        <button class="vista-btn" data-vista="semana" aria-pressed="false">Semana</button>
+        <button class="vista-btn" data-vista="dia" aria-pressed="false">Día</button>
       </nav>
 
       <div class="navegacion-fecha">
-        <button id="btn-anterior" title="Anterior">‹</button>
-        <span id="etiqueta-fecha"></span>
-        <button id="btn-siguiente" title="Siguiente">›</button>
+        <button id="btn-anterior" title="Anterior" aria-label="Anterior">‹</button>
+        <span id="etiqueta-fecha" aria-live="polite"></span>
+        <button id="btn-siguiente" title="Siguiente" aria-label="Siguiente">›</button>
         <button id="btn-hoy">Hoy</button>
       </div>
 
       <div class="usuario">
-        <button id="btn-recargar" title="Recargar datos">⟳ Recargar</button>
+        <button id="btn-recargar" title="Recargar datos" aria-label="Recargar datos"><span aria-hidden="true">⟳</span><span class="txt-recargar"> Recargar</span></button>
         <span id="usuario-nombre"></span>
         <button id="btn-usuarios" hidden>Usuarios</button>
         <button id="btn-salir">Salir</button>
       </div>
     </header>
 
-    <p id="carga-error" class="error-msg" hidden></p>
+    <div id="leyenda" class="leyenda" aria-label="Etapas del embudo"></div>
+    <p id="carga-error" class="error-msg" role="alert" hidden></p>
     <main id="contenedor-vista" class="contenedor-vista"></main>
 
   </div>
 
   <!-- ---------- Modal: detalle / edición de publicación ---------- -->
   <div id="modal-post" class="modal-fondo" hidden>
-    <div class="modal-caja">
-      <button class="modal-cerrar" id="modal-cerrar">✕</button>
+    <div class="modal-caja" role="dialog" aria-modal="true" aria-label="Detalle de la publicación">
+      <button class="modal-cerrar" id="modal-cerrar" aria-label="Cerrar"><span aria-hidden="true">✕</span></button>
       <img id="modal-imagen" class="modal-imagen" alt="" />
       <div class="modal-campos">
         <label>Título
@@ -428,14 +596,14 @@ input, textarea, select {
         <button id="btn-eliminar" class="btn-peligro" hidden>Eliminar</button>
         <button id="btn-guardar" class="btn-primario">Guardar</button>
       </div>
-      <p id="guardar-msg" class="guardar-msg" hidden></p>
+      <p id="guardar-msg" class="guardar-msg" role="status" hidden></p>
     </div>
   </div>
 
   <!-- ---------- Panel de usuarios (solo admin) ---------- -->
   <div id="modal-usuarios" class="modal-fondo" hidden>
-    <div class="modal-caja">
-      <button class="modal-cerrar" id="usuarios-cerrar">✕</button>
+    <div class="modal-caja" role="dialog" aria-modal="true" aria-label="Usuarios">
+      <button class="modal-cerrar" id="usuarios-cerrar" aria-label="Cerrar"><span aria-hidden="true">✕</span></button>
       <h2>Usuarios</h2>
       <p class="hint">
         Para dar de alta un acceso nuevo, primero créalo en la consola de Firebase
@@ -451,7 +619,7 @@ input, textarea, select {
           <option value="admin">Admin</option>
         </select>
         <button type="submit" id="nu-boton">Agregar</button>
-        <p id="nu-msg" class="form-msg" hidden></p>
+        <p id="nu-msg" class="form-msg" role="status" hidden></p>
       </form>
     </div>
   </div>
@@ -467,7 +635,7 @@ input, textarea, select {
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
-  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+  getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc,
@@ -498,13 +666,17 @@ const db = getFirestore(app);
 // Configuración del embudo — un solo lugar para nombres y colores de etapa.
 // Cambiar el "label" de una etapa no afecta nada más.
 // ---------------------------------------------------------------------------
+// "n" es el número de paso del embudo: va en un recuadro junto al color para que
+// la etapa nunca dependa solo del color. Los colores viven en styles.css
+// (--etapa-<id> y --etapa-<id>-fg) y cambian solos en tema oscuro.
 const ESTADOS = [
-  { id: "por_disenar", label: "Por diseñar", color: "#8B5CF6" },
-  { id: "revisada",    label: "Revisada",    color: "#3B82F6" },
-  { id: "programada",  label: "Programada",  color: "#22C55E" },
-  { id: "publicada",   label: "Publicada",   color: "#DBA200" },
+  { id: "por_disenar", n: 1, label: "Por diseñar", color: "var(--etapa-por_disenar)", fg: "var(--etapa-por_disenar-fg)" },
+  { id: "revisada",    n: 2, label: "Revisada",    color: "var(--etapa-revisada)",    fg: "var(--etapa-revisada-fg)" },
+  { id: "programada",  n: 3, label: "Programada",  color: "var(--etapa-programada)",  fg: "var(--etapa-programada-fg)" },
+  { id: "publicada",   n: 4, label: "Publicada",   color: "var(--etapa-publicada)",   fg: "var(--etapa-publicada-fg)" },
 ];
-const COLOR_ATRASADA = "#F5343A";
+const varsEtapa = (e) => `--e-bg:${e.color};--e-fg:${e.fg}`;
+const icoEtapa = (e) => `<span class="etapa-ico" aria-hidden="true">${e.n}</span>`;
 const HORAS_ATRASO_PROGRAMADA = 2;
 const HORAS_ATRASO_POR_DISENAR_REVISADA = 24;
 
@@ -570,6 +742,46 @@ formLogin.addEventListener("submit", async (e) => {
     }
     loginError.hidden = false;
   }
+});
+
+// "¿Olvidaste tu contraseña?": Firebase manda el correo con el enlace para crear una
+// nueva. La respuesta es la MISMA exista o no la cuenta (no se revela quién tiene
+// acceso); solo se distingue lo que el usuario puede corregir: correo vacío o mal
+// escrito, sin conexión, o demasiados intentos.
+const btnOlvido = document.getElementById("btn-olvido");
+const loginInfo = document.getElementById("login-info");
+btnOlvido.addEventListener("click", async () => {
+  loginError.hidden = true;
+  loginInfo.hidden = true;
+  const campoEmail = document.getElementById("login-email");
+  const email = campoEmail.value.trim();
+  if (!email) {
+    loginError.textContent = "Escribe tu correo arriba y vuelve a pulsar «¿Olvidaste tu contraseña?».";
+    loginError.hidden = false;
+    campoEmail.focus();
+    return;
+  }
+  btnOlvido.disabled = true;
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (err) {
+    const code = err && err.code ? err.code : "";
+    const mensajes = {
+      "auth/network-request-failed": "Sin conexión con Firebase. Revisa tu internet e intenta de nuevo.",
+      "auth/too-many-requests": "Demasiados intentos. Espera unos minutos e intenta de nuevo.",
+      "auth/invalid-email": "Ese correo no parece válido. Revísalo e intenta de nuevo.",
+    };
+    if (mensajes[code]) {
+      loginError.textContent = mensajes[code];
+      loginError.hidden = false;
+      btnOlvido.disabled = false;
+      return;
+    }
+    // cualquier otro error (p. ej. cuenta inexistente) se trata igual que un éxito
+  }
+  btnOlvido.disabled = false;
+  loginInfo.textContent = "Si ese correo tiene acceso, te enviamos un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.";
+  loginInfo.hidden = false;
 });
 
 document.getElementById("btn-salir").addEventListener("click", () => signOut(auth));
@@ -732,13 +944,36 @@ function irADia(fecha) {
 const contenedor = document.getElementById("contenedor-vista");
 
 function render() {
-  document.querySelectorAll(".vista-btn").forEach(b =>
-    b.classList.toggle("activa", b.dataset.vista === estadoApp.vista)
-  );
+  document.querySelectorAll(".vista-btn").forEach(b => {
+    const activa = b.dataset.vista === estadoApp.vista;
+    b.classList.toggle("activa", activa);
+    b.setAttribute("aria-pressed", String(activa));
+  });
+  renderLeyenda();
 
   if (estadoApp.vista === "mes") { renderEtiquetaFecha(); renderMes(); }
   else if (estadoApp.vista === "semana") { renderEtiquetaFecha(); renderSemana(); }
   else { renderEtiquetaFecha(); renderDia(); }
+}
+
+function renderLeyenda() {
+  const el = document.getElementById("leyenda");
+  if (!el) return;
+  el.innerHTML = ESTADOS.map(e =>
+    `<span class="leyenda-item" style="${varsEtapa(e)}">${icoEtapa(e)}${e.label}</span>`
+  ).join("") + `<span class="leyenda-item"><span aria-hidden="true">⚠</span> Atrasada (contorno rojo)</span>`;
+}
+
+// Un elemento que no es <button> pero se puede abrir con clic debe poder
+// abrirse también con teclado (Tab + Enter/Espacio) y anunciarse como botón.
+function hacerActivable(el, etiqueta, accion) {
+  el.setAttribute("role", "button");
+  el.tabIndex = 0;
+  if (etiqueta) el.setAttribute("aria-label", etiqueta);
+  el.addEventListener("click", accion);
+  el.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); accion(); }
+  });
 }
 
 function renderEtiquetaFecha() {
@@ -783,24 +1018,41 @@ function renderMes() {
     const esHoy = mismoDia(dia, hoy);
     const posts = postsDelDia(dia);
 
-    const puntos = ESTADOS.map(estado => {
+    // Escritorio: hasta 2 chips con título e icono de etapa; móvil: insignias por etapa.
+    const ordenados = [...posts].sort((x, y) =>
+      ESTADOS.findIndex(e => e.id === x.estado) - ESTADOS.findIndex(e => e.id === y.estado));
+    const chips = ordenados.slice(0, 2).map(p => {
+      const e = estadoInfo(p.estado);
+      return `<div class="chip-post ${esAtrasada(p) ? "atrasada" : ""}" style="${varsEtapa(e)}">${icoEtapa(e)}<span class="chip-txt">${escapeHtml(p.titulo || "(sin título)")}</span></div>`;
+    }).join("");
+    const mas = posts.length > 2 ? `<div class="chips-mas">+${posts.length - 2} más</div>` : "";
+
+    const insignias = ESTADOS.map(estado => {
       const enEstaEtapa = posts.filter(p => p.estado === estado.id);
       if (enEstaEtapa.length === 0) return "";
       const atrasada = enEstaEtapa.some(esAtrasada);
-      return `<span class="punto ${atrasada ? "punto-atrasada" : ""}" style="background:${estado.color}" title="${estado.label}: ${enEstaEtapa.length}"></span>`;
+      return `<span class="insignia ${atrasada ? "atrasada" : ""}" style="${varsEtapa(estado)}" title="${estado.label}: ${enEstaEtapa.length}">${estado.n}<span aria-hidden="true">·</span>${enEstaEtapa.length}</span>`;
     }).join("");
 
+    const resumen = ESTADOS.map(estado => {
+      const n = posts.filter(p => p.estado === estado.id).length;
+      return n ? `${estado.label} ${n}` : "";
+    }).filter(Boolean).join(", ");
+    const etiquetaDia = dia.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+    const etiqueta = `${etiquetaDia}: ${posts.length ? posts.length + (posts.length === 1 ? " publicación (" : " publicaciones (") + resumen + ")" : "sin publicaciones"}`;
+
     html += `
-      <div class="celda-mes ${fueraDeMes ? "fuera-mes" : ""} ${esHoy ? "hoy" : ""}" data-fecha="${dia.toISOString()}">
+      <div class="celda-mes ${fueraDeMes ? "fuera-mes" : ""} ${esHoy ? "hoy" : ""}" data-fecha="${dia.toISOString()}" data-etiqueta="${escapeHtml(etiqueta)}">
         <div class="celda-num">${dia.getDate()}</div>
-        <div class="puntos-etapa">${puntos}</div>
+        <div class="chips-mes">${chips}${mas}</div>
+        <div class="insignias-mes">${insignias}</div>
       </div>`;
   }
   html += `</div>`;
   contenedor.innerHTML = html;
 
   contenedor.querySelectorAll(".celda-mes").forEach(celda => {
-    celda.addEventListener("click", () => irADia(new Date(celda.dataset.fecha)));
+    hacerActivable(celda, celda.dataset.etiqueta, () => irADia(new Date(celda.dataset.fecha)));
   });
 }
 
@@ -822,8 +1074,8 @@ function renderSemana() {
       const enEstaEtapa = posts.filter(p => p.estado === estado.id);
       if (enEstaEtapa.length === 0) return "";
       const atrasada = enEstaEtapa.some(esAtrasada);
-      return `<div class="mini-pill ${atrasada ? "atrasada" : ""}" style="background:${estado.color}">
-                <span>${estado.label}</span><span>${enEstaEtapa.length}</span>
+      return `<div class="mini-pill ${atrasada ? "atrasada" : ""}" style="${varsEtapa(estado)}">
+                ${icoEtapa(estado)}<span>${estado.label}</span><span class="mini-n">${enEstaEtapa.length}</span>
               </div>`;
     }).join("");
 
@@ -837,7 +1089,8 @@ function renderSemana() {
   contenedor.innerHTML = html;
 
   contenedor.querySelectorAll(".columna-semana").forEach(col => {
-    col.addEventListener("click", () => irADia(new Date(col.dataset.fecha)));
+    const f = new Date(col.dataset.fecha);
+    hacerActivable(col, "Abrir " + f.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }), () => irADia(f));
   });
 }
 
@@ -852,9 +1105,9 @@ function renderDia() {
     const enEstaEtapa = posts.filter(p => p.estado === estado.id);
     html += `
       <div class="columna-etapa">
-        <div class="columna-etapa-header" style="--linea:${estado.color}">
-          <span class="chip-color" style="background:${estado.color}"></span>
-          ${estado.label}
+        <div class="columna-etapa-header" style="--linea:${estado.color};${varsEtapa(estado)}">
+          ${icoEtapa(estado)}
+          <h3 class="columna-etapa-titulo">${estado.label}</h3>
           <span class="contador-etapa">${enEstaEtapa.length}</span>
         </div>
         ${enEstaEtapa.map(p => tarjetaHtml(p, estado.color)).join("") || '<p class="tarjeta-vacio">Sin publicaciones</p>'}
@@ -864,7 +1117,7 @@ function renderDia() {
   contenedor.innerHTML = html;
 
   contenedor.querySelectorAll(".tarjeta-post").forEach(el => {
-    el.addEventListener("click", () => abrirModal(el.dataset.id));
+    hacerActivable(el, "Abrir publicación: " + (el.dataset.titulo || ""), () => abrirModal(el.dataset.id));
   });
 }
 
@@ -882,7 +1135,7 @@ function tarjetaHtml(post, color) {
   const imagenValida = typeof post.imagenUrl === "string" && post.imagenUrl.startsWith(PREFIJO_IMAGEN_VALIDO);
   const plataformasTexto = (post.plataformas || []).join(", ");
   return `
-    <div class="tarjeta-post ${atrasada ? "atrasada" : ""}" style="--linea:${color}" data-id="${escapeHtml(post.id)}">
+    <div class="tarjeta-post ${atrasada ? "atrasada" : ""}" style="--linea:${color}" data-id="${escapeHtml(post.id)}" data-titulo="${escapeHtml(post.titulo || "(sin título)")}">
       ${imagenValida ? `<img src="${escapeHtml(post.imagenUrl)}" alt="" />` : ""}
       <div class="titulo">${escapeHtml(post.titulo || "(sin título)")}</div>
       <div class="meta">
@@ -939,14 +1192,14 @@ function abrirModal(postId) {
     if (idx === idxActual) return;
     const btn = document.createElement("button");
     btn.textContent = idx > idxActual ? `Mover a ${estado.label} →` : `← Regresar a ${estado.label}`;
-    btn.style.background = estado.color;
+    btn.style.cssText = varsEtapa(estado);
     btn.addEventListener("click", () => moverEtapa(post.id, estado.id));
     contBotones.appendChild(btn);
   });
 
   document.getElementById("btn-eliminar").hidden = estadoApp.usuarioRol !== "admin";
   document.getElementById("guardar-msg").hidden = true;
-  modalPost.hidden = false;
+  abrirDialogo(modalPost, document.getElementById("campo-titulo"));
 }
 
 // Dibuja los chips seleccionables de plataforma/canal, marcando los que
@@ -974,7 +1227,7 @@ function leerPlataformasSeleccionadas() {
   return [...marcadas, ...otras];
 }
 
-document.getElementById("modal-cerrar").addEventListener("click", () => modalPost.hidden = true);
+document.getElementById("modal-cerrar").addEventListener("click", () => cerrarDialogo(modalPost));
 
 document.getElementById("btn-guardar").addEventListener("click", async () => {
   const post = estadoApp.postSeleccionado;
@@ -1033,7 +1286,7 @@ document.getElementById("btn-eliminar").addEventListener("click", async () => {
     return;
   }
   estadoApp.posts = estadoApp.posts.filter(p => p.id !== post.id);
-  modalPost.hidden = true;
+  cerrarDialogo(modalPost);
   render();
 });
 
@@ -1055,7 +1308,7 @@ async function moverEtapa(postId, nuevoEstado) {
   }
   post.estado = nuevoEstado;
   post.actualizadoEn = Timestamp.now();
-  modalPost.hidden = true;
+  cerrarDialogo(modalPost);
   render();
 }
 
@@ -1066,9 +1319,9 @@ const modalUsuarios = document.getElementById("modal-usuarios");
 
 document.getElementById("btn-usuarios").addEventListener("click", () => {
   renderListaUsuarios();
-  modalUsuarios.hidden = false;
+  abrirDialogo(modalUsuarios, document.getElementById("usuarios-cerrar"));
 });
-document.getElementById("usuarios-cerrar").addEventListener("click", () => modalUsuarios.hidden = true);
+document.getElementById("usuarios-cerrar").addEventListener("click", () => cerrarDialogo(modalUsuarios));
 
 function renderListaUsuarios() {
   const cont = document.getElementById("lista-usuarios");
@@ -1171,16 +1424,41 @@ document.getElementById("form-nuevo-usuario").addEventListener("submit", async (
 // ============================================================================
 // CERRAR MODALES: tecla Escape y clic en el fondo oscuro
 // ============================================================================
+let focoPrevio = null;
+
+function abrirDialogo(fondo, primerCampo) {
+  focoPrevio = document.activeElement;
+  fondo.hidden = false;
+  if (primerCampo) primerCampo.focus();
+}
+
+function cerrarDialogo(fondo) {
+  fondo.hidden = true;
+  if (focoPrevio && document.contains(focoPrevio) && typeof focoPrevio.focus === "function") focoPrevio.focus();
+  focoPrevio = null;
+}
+
 function cerrarModalesAbiertos() {
-  modalUsuarios.hidden = true;
-  modalPost.hidden = true;
+  [modalUsuarios, modalPost].forEach(f => { if (!f.hidden) cerrarDialogo(f); });
 }
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") cerrarModalesAbiertos();
+  if (e.key === "Escape") { cerrarModalesAbiertos(); return; }
+  // Tab se queda dentro del diálogo abierto
+  if (e.key === "Tab") {
+    const abierto = [modalUsuarios, modalPost].find(f => !f.hidden);
+    if (!abierto) return;
+    const foc = Array.from(abierto.querySelectorAll("button, input, select, textarea, [tabindex]:not([tabindex='-1'])"))
+      .filter(el => !el.disabled && !el.hidden && el.offsetParent !== null);
+    if (!foc.length) return;
+    const primero = foc[0], ultimo = foc[foc.length - 1];
+    if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+    else if (!abierto.contains(document.activeElement)) { e.preventDefault(); primero.focus(); }
+  }
 });
 [modalPost, modalUsuarios].forEach(fondo => {
   // solo si el clic fue en el fondo mismo, no dentro de la caja
-  fondo.addEventListener("click", (e) => { if (e.target === fondo) fondo.hidden = true; });
+  fondo.addEventListener("click", (e) => { if (e.target === fondo) cerrarDialogo(fondo); });
 });
 
 </script>
