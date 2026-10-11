@@ -3,22 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0A192F">
 <title>ATIK TECH — Todo lo que te importa, conectado a ti</title>
-<meta name="description" content="ATIK TECH: todo lo que te importa, conectado a ti. Sistemas, suite de apps y aprendizaje en un solo ecosistema.">
+<meta name="description" content="ATIK TECH es un ecosistema de sistemas, apps y herramientas que resuelven lo que hoy manejas en mensajes sueltos, hojas de cálculo o de memoria. Una sola cuenta para todo.">
 <meta property="og:title" content="ATIK TECH — Todo lo que te importa, conectado a ti">
-<meta property="og:description" content="Sistemas, suite de apps y aprendizaje en un solo ecosistema conectado.">
+<meta property="og:description" content="Un ecosistema de sistemas, apps y herramientas conectadas por una misma cuenta. Hecho en México.">
 <meta property="og:type" content="website">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/atik.css">
+<script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
+<a class="skip" href="#contenido">Saltar al contenido</a>
 
 <header>
   <div class="nav wrap">
-    <a href="index.html" class="logo">AT<span>IK</span> TECH</a>
-    <nav class="nav-links" id="navLinks">
+    <a href="index.html" class="logo" aria-label="ATIK TECH, inicio">AT<b>IK</b> TECH</a>
+    <nav class="nav-links" id="navLinks" aria-label="Principal">
       <a href="sistemas.html">Sistemas</a>
       <a href="suite.html">Suite ATIK</a>
       <a href="aprendizaje.html">Aprendizaje</a>
@@ -30,103 +30,94 @@
   </div>
 </header>
 
+<main id="contenido">
+
 <section class="hero">
-  <div class="wrap hero-inner">
-    <p class="eyebrow">Fuerte. Analítico. Flexible.</p>
+  <div class="wrap">
     <h1>Todo lo que te importa, conectado a ti.</h1>
     <p class="lead">ATIK TECH es un ecosistema de sistemas, apps y herramientas que resuelven lo que hoy manejas en mensajes sueltos, hojas de cálculo o de memoria — cada una enfocada en una sola cosa, todas conectadas por una misma cuenta.</p>
-    <div class="hero-actions">
-      <a href="#precios" class="btn-primary">Prueba gratis 14 días</a>
-      <a href="#categorias" class="btn-secondary">Ver el ecosistema</a>
+    <div class="actions">
+      <a href="#precios" class="btn btn-primary">Unirme a la lista de espera</a>
+      <a href="#categorias" class="btn btn-outline">Ver el ecosistema</a>
     </div>
-    <p class="trust-note">🔒 Cifrado de extremo a extremo · Hecho en México</p>
+    <p class="trust">Cifrado de extremo a extremo · Hecho en México</p>
+  </div>
+  <div class="stage">
+    <div class="frame">
+      <div class="frame-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+      <img src="assets/img/taanwallet-desktop.jpg" width="1280" height="800" alt="TaanWallet en una computadora: saldo disponible, cuentas y últimos movimientos en dos columnas">
+    </div>
+    <div class="phone">
+      <img src="assets/img/taanwallet-mobile.jpg" width="390" height="844" alt="TaanWallet en un celular: saldo disponible y cuentas">
+    </div>
   </div>
 </section>
 
-<section class="section" id="categorias">
+<section class="s s-light" id="categorias">
   <div class="wrap">
-    <div class="section-head">
-      <h2>Un ecosistema, tres formas de usarlo</h2>
+    <div class="s-head reveal">
+      <h2>Un ecosistema, tres formas de usarlo.</h2>
       <p>Cada categoría resuelve un tipo de necesidad distinta. Úsalas por separado o combínalas.</p>
     </div>
-    <div class="cat-grid">
-      <div class="cat-card">
+    <div class="bento">
+      <article class="card reveal">
         <h3>Sistemas</h3>
         <p>Productos independientes, listos para operar tu negocio de principio a fin.</p>
-        <div class="apps-preview">Travel Shield · MiRebranda · A Domicilio</div>
-        <a href="sistemas.html" class="cat-link">Ver Sistemas →</a>
-      </div>
-      <div class="cat-card">
+        <div class="chips"><span class="chip">Travel Shield</span><span class="chip">MiRebranda</span><span class="chip">A Domicilio</span></div>
+        <a href="sistemas.html" class="link-more">Ver Sistemas</a>
+      </article>
+      <article class="card dark reveal">
         <h3>Suite ATIK</h3>
         <p>Apps enfocadas que comparten una sola cuenta, para negocio y vida personal.</p>
-        <div class="apps-preview">Chakbal · Koolcollect · Xíimbal · Taan Wallet · Tzibal · Ixkan · TaakPass</div>
-        <a href="suite.html" class="cat-link">Ver Suite ATIK →</a>
-      </div>
-      <div class="cat-card">
+        <div class="chips"><span class="chip">Chakbal</span><span class="chip">Koolcollect</span><span class="chip">Xíimbal</span><span class="chip">Taan Wallet</span><span class="chip">Tzibal</span><span class="chip">Ixkan</span><span class="chip">TaakPass</span></div>
+        <a href="suite.html" class="link-more">Ver Suite ATIK</a>
+      </article>
+      <article class="card reveal">
         <h3>Aprendizaje</h3>
         <p>Herramientas para quienes están aprendiendo a programar, paso a paso.</p>
-        <div class="apps-preview">PathMentor</div>
-        <a href="aprendizaje.html" class="cat-link">Ver Aprendizaje →</a>
-      </div>
+        <div class="chips"><span class="chip">PathMentor</span></div>
+        <a href="aprendizaje.html" class="link-more">Ver Aprendizaje</a>
+      </article>
     </div>
   </div>
 </section>
 
-<section class="section" style="padding-top:0;">
+<section class="s s-dark">
   <div class="wrap">
-    <div class="section-head center">
-      <h2>Cómo funciona</h2>
+    <div class="s-head center reveal">
+      <h2>Cómo funciona.</h2>
       <p>Empezar toma menos tiempo del que crees.</p>
     </div>
-    <div class="steps">
-      <div class="step">
-        <h3>Crea tu cuenta</h3>
-        <p>Un solo registro te da acceso a todo el ecosistema ATIK TECH.</p>
-      </div>
-      <div class="step">
-        <h3>Elige tus apps</h3>
-        <p>Activa solo lo que necesitas hoy — sistemas, suite o aprendizaje.</p>
-      </div>
-      <div class="step">
-        <h3>Opera desde un solo lugar</h3>
-        <p>Tus datos se conectan entre apps cuando tiene sentido, sin capturar dos veces.</p>
-      </div>
+    <div class="cols3">
+      <div class="step reveal"><div class="num">1</div><h3>Crea tu cuenta</h3><p>Un solo registro te da acceso a todo el ecosistema ATIK TECH.</p></div>
+      <div class="step reveal"><div class="num">2</div><h3>Elige tus apps</h3><p>Activa solo lo que necesitas hoy — sistemas, suite o aprendizaje.</p></div>
+      <div class="step reveal"><div class="num">3</div><h3>Opera desde un solo lugar</h3><p>Tus datos se conectan entre apps cuando tiene sentido, sin capturar dos veces.</p></div>
     </div>
   </div>
 </section>
 
-<section class="section values" id="nosotros">
+<section class="s s-light" id="nosotros">
   <div class="wrap">
-    <div class="section-head">
-      <h2>Por qué elegir ATIK TECH</h2>
+    <div class="s-head reveal">
+      <h2>Por qué elegir ATIK TECH.</h2>
       <p>Tres principios que guían cada decisión de producto.</p>
     </div>
-    <div class="values-grid">
-      <div class="value">
-        <h3>Fuerte</h3>
-        <p>Tu información protegida de punta a punta, sin depender de hojas sueltas o mensajes perdidos.</p>
-      </div>
-      <div class="value">
-        <h3>Analítico</h3>
-        <p>Cada gasto, cada cobro y cada movimiento queda registrado y es fácil de revisar cuando lo necesitas.</p>
-      </div>
-      <div class="value">
-        <h3>Flexible</h3>
-        <p>Se adapta al tamaño de tu equipo, desde una sola persona hasta un negocio con varias áreas.</p>
-      </div>
+    <div class="cols3">
+      <div class="value reveal"><h3>Fuerte.</h3><p>Tu información protegida de punta a punta, sin depender de hojas sueltas o mensajes perdidos.</p></div>
+      <div class="value reveal"><h3>Analítico.</h3><p>Cada gasto, cada cobro y cada movimiento queda registrado y es fácil de revisar cuando lo necesitas.</p></div>
+      <div class="value reveal"><h3>Flexible.</h3><p>Se adapta al tamaño de tu equipo, desde una sola persona hasta un negocio con varias áreas.</p></div>
     </div>
   </div>
 </section>
 
-<section class="section service" id="paginas-web">
+<section class="s s-dark" id="paginas-web">
   <div class="wrap">
-    <div class="section-head">
-      <span class="app-tag">Servicio nuevo</span>
-      <h2>Tu página web, lista sin esperar meses</h2>
-      <p>Diseñamos y publicamos el sitio de tu negocio a partir de plantillas ya probadas por rubro — tú pones tu marca, tus fotos y tu contenido, nosotros nos encargamos del resto.</p>
+    <div class="s-head center reveal">
+      <h2>Tu página web, lista sin esperar meses.</h2>
+      <p><strong style="color:var(--white)">Servicio nuevo.</strong> Diseñamos y publicamos el sitio de tu negocio a partir de plantillas ya probadas por rubro — tú pones tu marca, tus fotos y tu contenido, nosotros nos encargamos del resto.</p>
     </div>
 
-    <ul class="service-includes">
+    <ul class="checks reveal">
       <li>Diseño responsivo, se ve bien en celular y computadora</li>
       <li>Modo oscuro y claro automático, sin configurar nada</li>
       <li>Botón de WhatsApp flotante para que te escriban directo</li>
@@ -135,140 +126,105 @@
       <li>Hosting configurado y funcionando desde el día de entrega</li>
     </ul>
 
-    <div class="pricing-tiers">
-      <div class="tier-card">
+    <div class="tiers">
+      <article class="tier reveal">
         <h3>Exprés</h3>
-        <p class="tier-price">Desde $3,500 <span>MXN</span></p>
-        <p class="tier-desc">Una página, plantilla de tu rubro personalizada con tu logo, colores, fotos y textos.</p>
-        <ul>
-          <li>1 página</li>
-          <li>WhatsApp, redes sociales y formulario de contacto</li>
-          <li>Entrega en 3 a 5 días hábiles</li>
-        </ul>
-      </div>
-      <div class="tier-card tier-card--featured">
+        <p class="price">Desde $3,500 <small>MXN</small></p>
+        <p>Una página, plantilla de tu rubro personalizada con tu logo, colores, fotos y textos.</p>
+        <ul><li>1 página</li><li>WhatsApp, redes sociales y formulario de contacto</li><li>Entrega en 3 a 5 días hábiles</li></ul>
+      </article>
+      <article class="tier featured reveal">
         <span class="tier-badge">Más pedido</span>
         <h3>Negocio</h3>
-        <p class="tier-price">Desde $6,500 <span>MXN</span></p>
-        <p class="tier-desc">Todo lo de Exprés, con más páginas y presencia para un negocio que ya está operando.</p>
-        <ul>
-          <li>Hasta 4 páginas (inicio, servicios, nosotros, contacto)</li>
-          <li>Mapa, horario, preguntas frecuentes y SEO básico</li>
-          <li>Configuración de tu dominio propio</li>
-        </ul>
-      </div>
-      <div class="tier-card">
+        <p class="price">Desde $6,500 <small>MXN</small></p>
+        <p>Todo lo de Exprés, con más páginas y presencia para un negocio que ya está operando.</p>
+        <ul><li>Hasta 4 páginas (inicio, servicios, nosotros, contacto)</li><li>Mapa, horario, preguntas frecuentes y SEO básico</li><li>Configuración de tu dominio propio</li></ul>
+      </article>
+      <article class="tier reveal">
         <h3>A la medida</h3>
-        <p class="tier-price">Cotización</p>
-        <p class="tier-desc">Diseño desde cero, tienda en línea, reservas o alguna integración específica de tu negocio.</p>
-        <ul>
-          <li>Sin plantilla — estructura propia</li>
-          <li>Funciones a medida de lo que necesites</li>
-          <li>Tiempo de entrega según alcance</li>
-        </ul>
-      </div>
+        <p class="price">Cotización</p>
+        <p>Diseño desde cero, tienda en línea, reservas o alguna integración específica de tu negocio.</p>
+        <ul><li>Sin plantilla — estructura propia</li><li>Funciones a medida de lo que necesites</li><li>Tiempo de entrega según alcance</li></ul>
+      </article>
     </div>
 
-    <div class="service-cta">
-      <a href="#contacto" class="btn-primary">Cuéntanos de tu negocio</a>
-      <p class="service-cta-note">Sin compromiso — te respondemos con una propuesta concreta, no con un vendedor detrás.</p>
+    <div class="service-cta reveal">
+      <a href="#contacto" class="btn btn-primary">Cuéntanos de tu negocio</a>
+      <p>Sin compromiso — te respondemos con una propuesta concreta, no con un vendedor detrás.</p>
     </div>
   </div>
 </section>
 
-<section class="section" id="precios">
+<section class="s s-light" id="precios">
   <div class="wrap">
-    <div class="pricing-note">
-      <h3>Precios — muy pronto</h3>
+    <div class="waitlist reveal">
+      <h2>Precios — muy pronto.</h2>
       <p>Estamos afinando los planes de cada categoría. Únete a la lista de espera y sé de los primeros en probar el ecosistema completo con condiciones preferentes.</p>
-      <a href="#contacto" class="btn-primary">Unirme a la lista de espera</a>
+      <a href="#contacto" class="btn btn-dark">Unirme a la lista de espera</a>
+    </div>
+    <p class="note">Muy pronto: historias reales de negocios y personas que ya usan ATIK TECH.</p>
+
+    <div class="s-head center reveal" style="margin-top:clamp(72px,10vw,120px)">
+      <h2>Preguntas frecuentes.</h2>
+    </div>
+    <div class="faq reveal">
+      <details>
+        <summary>¿Necesito usar todas las apps de la suite?</summary>
+        <p>No. Cada app funciona de forma independiente. Las conexiones entre ellas son un extra opcional, nunca un requisito.</p>
+      </details>
+      <details>
+        <summary>¿Mis datos se comparten entre apps sin que yo lo sepa?</summary>
+        <p>No. Cuando dos apps se conectan (por ejemplo Xíimbal con Taan Wallet), es una acción visible y, en la mayoría de los casos, algo que tú decides activar.</p>
+      </details>
+      <details>
+        <summary>¿Sirve para negocios grandes o solo para uso personal?</summary>
+        <p>Ambos. Cada producto está pensado para escalar desde una sola persona hasta un equipo con varias áreas, sin cambiar de herramienta.</p>
+      </details>
+      <details>
+        <summary>¿Dónde puedo descargar cada app?</summary>
+        <p>Entra a la categoría correspondiente (Sistemas, Suite ATIK o Aprendizaje) — ahí encontrarás los enlaces de descarga de cada una.</p>
+      </details>
     </div>
   </div>
 </section>
 
-<section class="section">
+<section class="s s-dark" id="contacto">
   <div class="wrap">
-    <div class="proof-note">
-      Muy pronto: historias reales de negocios y personas que ya usan ATIK TECH.
-    </div>
-  </div>
-</section>
-
-<section class="section">
-  <div class="wrap">
-    <div class="section-head">
-      <h2>Preguntas frecuentes</h2>
-    </div>
-    <details class="faq-item">
-      <summary>¿Necesito usar todas las apps de la suite?</summary>
-      <p>No. Cada app funciona de forma independiente. Las conexiones entre ellas son un extra opcional, nunca un requisito.</p>
-    </details>
-    <details class="faq-item">
-      <summary>¿Mis datos se comparten entre apps sin que yo lo sepa?</summary>
-      <p>No. Cuando dos apps se conectan (por ejemplo Xíimbal con Taan Wallet), es una acción visible y, en la mayoría de los casos, algo que tú decides activar.</p>
-    </details>
-    <details class="faq-item">
-      <summary>¿Sirve para negocios grandes o solo para uso personal?</summary>
-      <p>Ambos. Cada producto está pensado para escalar desde una sola persona hasta un equipo con varias áreas, sin cambiar de herramienta.</p>
-    </details>
-    <details class="faq-item">
-      <summary>¿Dónde puedo descargar cada app?</summary>
-      <p>Entra a la categoría correspondiente (Sistemas, Suite ATIK o Aprendizaje) — ahí encontrarás los enlaces de descarga de cada una.</p>
-    </details>
-  </div>
-</section>
-
-<section class="section" id="contacto">
-  <div class="wrap">
-    <div class="section-head">
-      <h2>Hablemos</h2>
+    <div class="s-head reveal">
+      <h2>Hablemos.</h2>
       <p>Cuéntanos qué necesitas resolver y te contactamos lo antes posible.</p>
     </div>
-    <div class="contact-grid">
-      <div class="contact-info">
+    <div class="contact">
+      <div class="contact-info reveal">
         <h3>Contacto directo</h3>
-        <div class="contact-row">📞 [Tu número de contacto]</div>
-        <div class="contact-row">✉️ m.delarosa.atik.tech@gmail.com</div>
-        <h3 style="margin-top:28px;">Síguenos</h3>
-        <div class="social-row">
-          <a href="[Instagram]" aria-label="Instagram">IG</a>
-          <a href="[LinkedIn]" aria-label="LinkedIn">in</a>
-          <a href="[X / Twitter]" aria-label="X">X</a>
-          <a href="[TikTok]" aria-label="TikTok">TT</a>
-        </div>
+        <!-- TODO: llenar teléfono y redes (hoy no hay datos reales) y quitar `hidden` -->
+        <div class="contact-row" hidden>📞 [Tu número de contacto]</div>
+        <div class="contact-row"><a href="mailto:m.delarosa.atik.tech@gmail.com">m.delarosa.atik.tech@gmail.com</a></div>
       </div>
-      <form>
-        <div>
-          <label for="nombre">Nombre</label>
-          <input type="text" id="nombre" name="nombre" required>
-        </div>
-        <div>
-          <label for="correo">Correo</label>
-          <input type="email" id="correo" name="correo" required>
-        </div>
-        <div>
-          <label for="mensaje">Mensaje</label>
-          <textarea id="mensaje" name="mensaje" required></textarea>
-        </div>
-        <button type="submit" class="btn-submit">Enviar mensaje</button>
+      <form id="contactForm" class="reveal">
+        <div><label for="nombre">Nombre</label><input type="text" id="nombre" name="nombre" autocomplete="name" required></div>
+        <div><label for="correo">Correo</label><input type="email" id="correo" name="correo" autocomplete="email" required></div>
+        <div><label for="mensaje">Mensaje</label><textarea id="mensaje" name="mensaje" required></textarea></div>
+        <button type="submit" class="btn btn-primary">Enviar mensaje</button>
+        <p class="form-note">Al enviar se abrirá tu correo con el mensaje listo para mandar.</p>
       </form>
     </div>
   </div>
 </section>
 
+</main>
+
 <footer>
   <div class="wrap">
-    <div class="footer-top">
-      <div class="footer-col">
-        <a href="index.html" class="logo" style="font-size:1.1rem;">AT<span>IK</span> TECH</a>
-      </div>
-      <div class="footer-col">
+    <div class="foot-top">
+      <div><a href="index.html" class="logo" aria-label="ATIK TECH, inicio">AT<b>IK</b> TECH</a></div>
+      <div>
         <h4>Sistemas</h4>
         <a href="sistemas.html#travel-shield">Travel Shield</a>
         <a href="sistemas.html#mirebranda">MiRebranda</a>
         <a href="sistemas.html#a-domicilio">A Domicilio</a>
       </div>
-      <div class="footer-col">
+      <div>
         <h4>Suite ATIK</h4>
         <a href="suite.html#chakbal">Chakbal</a>
         <a href="suite.html#koolcollect">Koolcollect</a>
@@ -278,20 +234,20 @@
         <a href="suite.html#ixkan">Ixkan</a>
         <a href="suite.html#taakpass">TaakPass</a>
       </div>
-      <div class="footer-col">
+      <div>
         <h4>Empresa</h4>
         <a href="aprendizaje.html">Aprendizaje</a>
         <a href="#paginas-web">Páginas web</a>
         <a href="#nosotros">Nosotros</a>
         <a href="#contacto">Contacto</a>
       </div>
-      <div class="footer-col">
+      <div>
         <h4>Legal</h4>
         <a href="/privacidad">Aviso de privacidad</a>
         <a href="/terminos">Términos de uso</a>
       </div>
     </div>
-    <div class="footer-bottom">
+    <div class="foot-bottom">
       <span>© 2026 ATIK TECH. Todos los derechos reservados.</span>
       <span>Hecho en México</span>
     </div>
