@@ -254,6 +254,13 @@ header {
 .btn-outline:hover {
   background: rgba(255, 255, 255, 0.06);
 }
+.btn-outline-light {
+  border-color: var(--line-light);
+  color: var(--ink);
+}
+.btn-outline-light:hover {
+  background: rgba(10, 25, 47, 0.05);
+}
 .btn[aria-disabled='true'] {
   opacity: 0.5;
   pointer-events: none;
@@ -711,7 +718,7 @@ textarea:focus {
 }
 .app-split {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: clamp(32px, 6vw, 88px);
   align-items: center;
 }
@@ -776,6 +783,156 @@ textarea:focus {
   min-height: 44px;
   padding: 0 20px;
   font-size: 0.92rem;
+}
+
+
+/* ---------- landings de Sistemas y Suite ---------- */
+.hero-compact {
+  padding-bottom: clamp(48px, 7vw, 88px);
+}
+.jump {
+  margin-top: 36px;
+  justify-content: center;
+}
+.jump .chip {
+  font-size: 0.9rem;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--white);
+  transition: background 0.2s;
+}
+.jump .chip:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.app-split h2 {
+  font-size: clamp(1.8rem, 3.6vw, 2.8rem);
+}
+.app-split.rev > :first-child {
+  order: 2;
+}
+.app-split .chips {
+  margin-top: 16px;
+}
+.s-dark .app-mark {
+  background: var(--navy-2);
+  border: 1px solid var(--line-dark);
+}
+.s-dark .app-split p {
+  color: var(--mute);
+}
+.s-dark .facts li::before {
+  border-color: var(--cyan);
+}
+.s-dark .link-more {
+  color: var(--cyan);
+}
+.soon {
+  margin-top: 28px;
+  font-size: 0.92rem;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.tile {
+  aspect-ratio: 3 / 4;
+  border-radius: 22px;
+  border: 1px solid var(--line-dark);
+  background:
+    linear-gradient(160deg, rgba(0, 217, 255, 0.14), rgba(124, 58, 237, 0.16)),
+    var(--navy-2);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 16px;
+  color: var(--white);
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.25;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tile::before {
+  content: attr(data-n);
+  color: var(--cyan);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.shots {
+  position: relative;
+  padding-bottom: 14%;
+}
+.shots .frame {
+  border-radius: 14px;
+  border-bottom: 1px solid var(--line-dark);
+}
+.shots .phone {
+  bottom: 0;
+  right: 4%;
+  width: 26%;
+}
+.carousel {
+  position: relative;
+}
+.carousel-track {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.carousel-track::-webkit-scrollbar {
+  display: none;
+}
+.carousel-slide {
+  flex: 0 0 88%;
+  scroll-snap-align: start;
+  margin: 0;
+}
+.carousel-slide img {
+  width: 100%;
+  height: auto;
+  border-radius: 18px;
+  border: 1px solid var(--line-light);
+  background: var(--white);
+}
+.carousel-slide figcaption {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+}
+.s-dark .carousel-slide img {
+  border-color: var(--line-dark);
+}
+.s-dark .carousel-slide figcaption {
+  color: var(--mute);
+}
+.carousel-arrows {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+.carousel-arrows button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line-light);
+  background: var(--white);
+  color: var(--ink);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.s-dark .carousel-arrows button {
+  background: var(--navy-2);
+  border-color: var(--line-dark);
+  color: var(--white);
+}
+.band .actions {
+  margin-top: 32px;
 }
 
 /* ---------- pie ---------- */
@@ -854,7 +1011,7 @@ footer a:hover {
   .tiers,
   .contact,
   .app-split {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .card {
     min-height: 0;

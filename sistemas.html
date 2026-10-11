@@ -3,23 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0A192F">
 <title>Sistemas — ATIK TECH</title>
 <meta name="description" content="Travel Shield, MiRebranda y A Domicilio: sistemas independientes de ATIK TECH listos para operar tu negocio.">
 <meta property="og:title" content="Sistemas — ATIK TECH">
 <meta property="og:description" content="Travel Shield, MiRebranda y A Domicilio: sistemas independientes de ATIK TECH.">
 <meta property="og:type" content="website">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/atik.css">
+<script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
+<a class="skip" href="#contenido">Saltar al contenido</a>
 
 <header>
   <div class="nav wrap">
-    <a href="index.html" class="logo">AT<span>IK</span> TECH</a>
-    <nav class="nav-links" id="navLinks">
-      <a href="sistemas.html" class="active">Sistemas</a>
+    <a href="index.html" class="logo" aria-label="ATIK TECH, inicio">AT<b>IK</b> TECH</a>
+    <nav class="nav-links" id="navLinks" aria-label="Principal">
+      <a href="sistemas.html" aria-current="page">Sistemas</a>
       <a href="suite.html">Suite ATIK</a>
       <a href="aprendizaje.html">Aprendizaje</a>
       <a href="index.html#precios">Precios</a>
@@ -30,67 +30,58 @@
   </div>
 </header>
 
-<section class="cat-hero">
+<main id="contenido">
+
+<section class="hero hero-compact">
   <div class="wrap">
-    <p class="eyebrow">Sistemas ATIK TECH</p>
-    <h1>Productos independientes, listos para operar tu negocio</h1>
-    <p>Cada sistema resuelve una operación completa de principio a fin — no son módulos sueltos, son productos que puedes usar por sí solos.</p>
+    <h1>Productos independientes, listos para operar tu negocio.</h1>
+    <p class="lead">Cada sistema resuelve una operación completa de principio a fin — no son módulos sueltos, son productos que puedes usar por sí solos.</p>
+    <div class="chips actions jump">
+      <a class="chip" href="#travel-shield">Travel Shield</a>
+      <a class="chip" href="#mirebranda">MiRebranda</a>
+      <a class="chip" href="#a-domicilio">A Domicilio</a>
+    </div>
   </div>
 </section>
 
-<section class="section">
+<section class="s s-light" id="travel-shield">
   <div class="wrap">
-
-    <div class="app-card" id="travel-shield">
-      <div class="app-identity">
-        <div class="app-logo">TS</div>
-        <span class="app-name-label">Travel Shield</span>
-        <div class="app-downloads">
-          <a href="https://travel-shield-atik.web.app" class="btn-download" target="_blank" rel="noopener">🌐 Versión web</a>
-          <a href="travel-shield-guia.html" class="btn-download">📖 Guía de uso</a>
-        </div>
-      </div>
-      <div class="app-body">
-        <span class="app-tag">Viajes y seguridad</span>
-        <h3>Itinerario claro, ayuda a un toque</h3>
-        <p class="desc">Travel Shield le da a tu viajero acceso directo a su itinerario y un botón de SOS para emergencias en ruta — los dos puntos que más importan cuando alguien viaja lejos de casa.</p>
-        <ul>
+    <div class="app-split">
+      <div class="reveal">
+        <div class="app-mark" aria-hidden="true">TS</div>
+        <h2>Itinerario claro, ayuda a un toque.</h2>
+        <div class="chips"><span class="chip">Viajes y seguridad</span></div>
+        <p>Travel Shield le da a tu viajero acceso directo a su itinerario y un botón de SOS para emergencias en ruta — los dos puntos que más importan cuando alguien viaja lejos de casa.</p>
+        <ul class="facts">
           <li>Lectura automática de itinerarios desde el correo</li>
           <li>Ubicación en tiempo real en el mapa</li>
           <li>Botón SOS para emergencias en ruta</li>
         </ul>
-        <div class="carousel">
-          <div class="carousel-track">
-            <div class="carousel-slide">Captura: Itinerario</div>
-            <div class="carousel-slide">Captura: Mapa en vivo</div>
-            <div class="carousel-slide">Captura: Botón SOS</div>
-          </div>
-          <div class="carousel-arrows">
-            <button class="carousel-prev" aria-label="Anterior">←</button>
-            <button class="carousel-next" aria-label="Siguiente">→</button>
-          </div>
-        </div>
+        <div class="stores"><a class="btn btn-dark" href="https://travel-shield-atik.web.app" target="_blank" rel="noopener">Versión web</a><a class="btn btn-outline-light" href="travel-shield-guia.html">Guía de uso</a></div>
+      </div>
+      <div class="reveal">
+        <div class="tiles" aria-hidden="true"><div class="tile" data-n="01">Itinerario</div><div class="tile" data-n="02">Mapa en vivo</div><div class="tile" data-n="03">Botón SOS</div></div>
       </div>
     </div>
+  </div>
+</section>
 
-    <div class="app-card" id="mirebranda">
-      <div class="app-identity">
-        <div class="app-logo">MR</div>
-        <span class="app-name-label">MiRebranda</span>
-        <div class="app-downloads">
-          <a href="https://buy.stripe.com/14A9AT37V0sKekIeyE9IQ00" class="btn-download" target="_blank" rel="noopener">💳 Suscribirse a MiRebranda</a>
-          <a href="https://github.com/AinurTulkas/mirebranda-releases/releases/latest" class="btn-download">🪟 Descargar para Windows</a>
-        </div>
-      </div>
-      <div class="app-body">
-        <span class="app-tag">Marketing</span>
-        <h3>Tus flyers, con tu marca, listos para publicar</h3>
-        <p class="desc">MiRebranda toma flyers y les coloca el logo de tu negocio para que los publiques en tus propias redes, y además te entrega el texto listo para acompañar la publicación.</p>
-        <ul>
+<section class="s s-dark" id="mirebranda">
+  <div class="wrap">
+    <div class="app-split rev">
+      <div class="reveal">
+        <div class="app-mark" aria-hidden="true">MR</div>
+        <h2>Tus flyers, con tu marca, listos para publicar.</h2>
+        <div class="chips"><span class="chip">Marketing</span></div>
+        <p>MiRebranda toma flyers y les coloca el logo de tu negocio para que los publiques en tus propias redes, y además te entrega el texto listo para acompañar la publicación.</p>
+        <ul class="facts">
           <li>Coloca tu logo automáticamente sobre cualquier flyer</li>
           <li>Genera el texto de publicación junto con la imagen</li>
           <li>Listo para compartir directo en tus redes</li>
         </ul>
+        <div class="stores"><a class="btn btn-primary" href="https://buy.stripe.com/14A9AT37V0sKekIeyE9IQ00" target="_blank" rel="noopener">Suscribirse a MiRebranda</a><a class="btn btn-outline" href="https://github.com/AinurTulkas/mirebranda-releases/releases/latest">Descargar para Windows</a></div>
+      </div>
+      <div class="reveal">
         <div class="carousel carousel-shots">
           <div class="carousel-track">
             <figure class="carousel-slide"><img src="assets/mirebranda/antes-despues.jpg" alt="Flyer de ejemplo antes y después: el logo de la operadora cambia por el de tu agencia" loading="lazy"><figcaption>Antes y después: tu logo, sin rastro de la operadora</figcaption></figure>
@@ -104,68 +95,66 @@
         </div>
       </div>
     </div>
+  </div>
+</section>
 
-    <div class="app-card" id="a-domicilio">
-      <div class="app-identity">
-        <div class="app-logo">AD</div>
-        <span class="app-name-label">A Domicilio</span>
-        <div class="app-downloads">
-          <a href="#" class="btn-download">📱 App Store</a>
-          <a href="#" class="btn-download">🤖 Google Play</a>
-          <a href="#" class="btn-download">🌐 Versión web</a>
-        </div>
-      </div>
-      <div class="app-body">
-        <span class="app-tag">Ventas y delivery</span>
-        <h3>Delivery pensado para el negocio de tu colonia</h3>
-        <p class="desc">A Domicilio es un sistema de venta estilo las grandes apps de delivery, pero hecho para negocios de barrio: pedidos para recoger en tienda o a domicilio, con mapa, zonas de servicio y geocercas para evitar zonas peligrosas.</p>
-        <ul>
+<section class="s s-light" id="a-domicilio">
+  <div class="wrap">
+    <div class="app-split">
+      <div class="reveal">
+        <div class="app-mark" aria-hidden="true">AD</div>
+        <h2>Delivery pensado para el negocio de tu colonia.</h2>
+        <div class="chips"><span class="chip">Ventas y delivery</span></div>
+        <p>A Domicilio es un sistema de venta estilo las grandes apps de delivery, pero hecho para negocios de barrio: pedidos para recoger en tienda o a domicilio, con mapa, zonas de servicio y geocercas para evitar zonas peligrosas.</p>
+        <ul class="facts">
           <li>Carga de menú y promociones</li>
           <li>Zonas de servicio y geocercas de seguridad</li>
           <li>Pedidos para recoger o a domicilio con mapa integrado</li>
         </ul>
-        <div class="carousel">
-          <div class="carousel-track">
-            <div class="carousel-slide">Captura: Menú</div>
-            <div class="carousel-slide">Captura: Mapa de zonas</div>
-            <div class="carousel-slide">Captura: Seguimiento de pedido</div>
-          </div>
-          <div class="carousel-arrows">
-            <button class="carousel-prev" aria-label="Anterior">←</button>
-            <button class="carousel-next" aria-label="Siguiente">→</button>
-          </div>
-        </div>
+        <p class="soon">Próximamente en App Store, Google Play y versión web.</p>
+      </div>
+      <div class="reveal">
+        <div class="tiles" aria-hidden="true"><div class="tile" data-n="01">Menú</div><div class="tile" data-n="02">Mapa de zonas</div><div class="tile" data-n="03">Seguimiento de pedido</div></div>
       </div>
     </div>
-
   </div>
 </section>
 
+<section class="s s-dark band">
+  <div class="wrap">
+    <div class="s-head center reveal" style="margin-bottom:0">
+      <h2>¿Tu operación necesita algo distinto?</h2>
+      <p>Cuéntanos qué necesitas resolver y te respondemos con una propuesta concreta.</p>
+      <div class="actions"><a class="btn btn-primary" href="index.html#contacto">Hablemos</a><a class="btn btn-outline" href="suite.html">Ver Suite ATIK</a></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
 <footer>
   <div class="wrap">
-    <div class="footer-top">
-      <div class="footer-col">
-        <a href="index.html" class="logo" style="font-size:1.1rem;">AT<span>IK</span> TECH</a>
-      </div>
-      <div class="footer-col">
+    <div class="foot-top">
+      <div><a href="index.html" class="logo" aria-label="ATIK TECH, inicio">AT<b>IK</b> TECH</a></div>
+      <div>
         <h4>Sistemas</h4>
         <a href="#travel-shield">Travel Shield</a>
         <a href="#mirebranda">MiRebranda</a>
         <a href="#a-domicilio">A Domicilio</a>
       </div>
-      <div class="footer-col">
+      <div>
         <h4>Explora</h4>
         <a href="suite.html">Suite ATIK</a>
         <a href="aprendizaje.html">Aprendizaje</a>
         <a href="index.html#contacto">Contacto</a>
       </div>
-      <div class="footer-col">
+      <div>
         <h4>Legal</h4>
         <a href="/privacidad">Aviso de privacidad</a>
         <a href="/terminos">Términos de uso</a>
       </div>
     </div>
-    <div class="footer-bottom">
+    <div class="foot-bottom">
       <span>© 2026 ATIK TECH. Todos los derechos reservados.</span>
       <span>Hecho en México</span>
     </div>
