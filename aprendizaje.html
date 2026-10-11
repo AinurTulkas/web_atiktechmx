@@ -3,25 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0A192F">
 <title>Aprendizaje — ATIK TECH</title>
 <meta name="description" content="PathMentor: aprende a programar con referencia práctica de Python, JavaScript, SQL, Git y más — de ATIK TECH.">
 <meta property="og:title" content="Aprendizaje — ATIK TECH">
 <meta property="og:description" content="PathMentor: aprende a programar con referencia práctica de varios lenguajes.">
 <meta property="og:type" content="website">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/atik.css">
+<script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
+<a class="skip" href="#contenido">Saltar al contenido</a>
 
 <header>
   <div class="nav wrap">
-    <a href="index.html" class="logo">AT<span>IK</span> TECH</a>
-    <nav class="nav-links" id="navLinks">
+    <a href="index.html" class="logo" aria-label="ATIK TECH, inicio">AT<b>IK</b> TECH</a>
+    <nav class="nav-links" id="navLinks" aria-label="Principal">
       <a href="sistemas.html">Sistemas</a>
       <a href="suite.html">Suite ATIK</a>
-      <a href="aprendizaje.html" class="active">Aprendizaje</a>
+      <a href="aprendizaje.html" aria-current="page">Aprendizaje</a>
       <a href="index.html#precios">Precios</a>
       <a href="index.html#contacto">Contacto</a>
     </nav>
@@ -30,76 +30,100 @@
   </div>
 </header>
 
-<section class="cat-hero">
+<main id="contenido">
+
+<section class="hero">
   <div class="wrap">
-    <p class="eyebrow">Aprendizaje</p>
-    <h1>Aprende a programar con referencia práctica, no solo teoría</h1>
-    <p>Pensada para quien está aprendiendo a programar y necesita tener a la mano los comandos y patrones que realmente se usan en el día a día.</p>
+    <h1>Aprende a programar con referencia práctica, no solo teoría.</h1>
+    <p class="lead">Pensada para quien está aprendiendo a programar y necesita tener a la mano los comandos y patrones que realmente se usan en el día a día.</p>
+    <div class="actions">
+      <a href="#pathmentor" class="btn btn-primary">Conoce PathMentor</a>
+    </div>
+  </div>
+  <div class="stage" aria-hidden="true">
+    <!-- Ilustración en CSS del tipo de contenido (no es una captura de la app).
+         Sustituir por capturas reales de PathMentor cuando existan. -->
+    <div class="ref">
+      <div class="ref-tabs">
+        <span class="on">Git</span><span>Python</span><span>JavaScript</span><span>SQL</span><span>TypeScript</span><span>CSS3</span>
+      </div>
+      <div class="ref-body">
+        <div class="ref-row"><code>git rebase -i HEAD~3</code><span>Reordena o une tus últimos 3 commits</span></div>
+        <div class="ref-row"><code>git stash pop</code><span>Recupera lo que guardaste a un lado</span></div>
+        <div class="ref-row"><code>git log --oneline --graph</code><span>Mira el historial de un vistazo</span></div>
+        <div class="ref-row"><code>git restore --staged archivo</code><span>Saca un archivo del siguiente commit</span></div>
+      </div>
+    </div>
   </div>
 </section>
 
-<section class="section">
+<section class="s s-light" id="pathmentor">
   <div class="wrap">
-
-    <div class="app-card" id="pathmentor">
-      <div class="app-identity">
-        <div class="app-logo">PM</div>
-        <span class="app-name-label">PathMentor</span>
-        <div class="app-downloads">
-          <a href="#" class="btn-download">📱 App Store</a>
-          <a href="#" class="btn-download">🤖 Google Play</a>
-          <a href="#" class="btn-download">🌐 Versión web</a>
-        </div>
-      </div>
-      <div class="app-body">
-        <span class="app-tag">Programación</span>
-        <h3>Comandos y referencia de 10 lenguajes, en un solo lugar</h3>
-        <p class="desc">PathMentor te muestra los comandos y patrones más usados de Python, JavaScript, TypeScript, SQL, HTML5, CSS3, C#, Firebase, Java y Git — para consultar mientras programas, no solo para leer una vez.</p>
-        <ul>
+    <div class="app-split">
+      <div class="reveal">
+        <div class="app-mark" aria-hidden="true">PM</div>
+        <h2>Comandos y referencia de 10 lenguajes, en un solo lugar.</h2>
+        <p>PathMentor te muestra los comandos y patrones más usados de Python, JavaScript, TypeScript, SQL, HTML5, CSS3, C#, Firebase, Java y Git — para consultar mientras programas, no solo para leer una vez.</p>
+        <ul class="facts">
           <li>Python, JavaScript, TypeScript, SQL, HTML5, CSS3, C#, Firebase, Java y Git</li>
           <li>Contenido organizado por tema y por lenguaje</li>
           <li>Pensado como referencia rápida, no como curso largo</li>
         </ul>
-        <div class="carousel">
-          <div class="carousel-track">
-            <div class="carousel-slide">Captura: Selector de lenguaje</div>
-            <div class="carousel-slide">Captura: Ficha de comando</div>
-            <div class="carousel-slide">Captura: Buscador</div>
-          </div>
-          <div class="carousel-arrows">
-            <button class="carousel-prev" aria-label="Anterior">←</button>
-            <button class="carousel-next" aria-label="Siguiente">→</button>
-          </div>
+        <!-- Enlaces de descarga: aún no hay URLs publicadas. Quitar aria-disabled y poner href al publicarlas. -->
+        <div class="stores">
+          <a class="btn btn-dark" aria-disabled="true">App Store · Próximamente</a>
+          <a class="btn btn-dark" aria-disabled="true">Google Play · Próximamente</a>
+          <a class="btn btn-dark" aria-disabled="true">Versión web · Próximamente</a>
+        </div>
+      </div>
+      <div class="reveal">
+        <h3 style="margin-bottom:20px">Los 10 lenguajes</h3>
+        <div class="lang-grid">
+          <span class="chip">Python</span><span class="chip">JavaScript</span><span class="chip">TypeScript</span>
+          <span class="chip">SQL</span><span class="chip">HTML5</span><span class="chip">CSS3</span>
+          <span class="chip">C#</span><span class="chip">Firebase</span><span class="chip">Java</span><span class="chip">Git</span>
         </div>
       </div>
     </div>
-
   </div>
 </section>
 
+<section class="s s-dark">
+  <div class="wrap">
+    <div class="s-head center reveal" style="margin-bottom:0">
+      <h2>Más herramientas, muy pronto.</h2>
+      <p>PathMentor es la primera de Aprendizaje. Mientras tanto, conoce el resto del ecosistema.</p>
+      <div class="actions" style="margin-top:32px">
+        <a href="suite.html" class="btn btn-primary">Ver Suite ATIK</a>
+        <a href="index.html#contacto" class="btn btn-outline">Hablar con nosotros</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
 <footer>
   <div class="wrap">
-    <div class="footer-top">
-      <div class="footer-col">
-        <a href="index.html" class="logo" style="font-size:1.1rem;">AT<span>IK</span> TECH</a>
-      </div>
-      <div class="footer-col">
+    <div class="foot-top">
+      <div><a href="index.html" class="logo" aria-label="ATIK TECH, inicio">AT<b>IK</b> TECH</a></div>
+      <div>
         <h4>Aprendizaje</h4>
         <a href="#pathmentor">PathMentor</a>
       </div>
-      <div class="footer-col">
+      <div>
         <h4>Explora</h4>
         <a href="sistemas.html">Sistemas</a>
         <a href="suite.html">Suite ATIK</a>
         <a href="index.html#contacto">Contacto</a>
       </div>
-      <div class="footer-col">
+      <div>
         <h4>Legal</h4>
         <a href="/privacidad">Aviso de privacidad</a>
         <a href="/terminos">Términos de uso</a>
       </div>
     </div>
-    <div class="footer-bottom">
+    <div class="foot-bottom">
       <span>© 2026 ATIK TECH. Todos los derechos reservados.</span>
       <span>Hecho en México</span>
     </div>
