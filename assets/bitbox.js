@@ -105,18 +105,51 @@
     for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) bits[r][c].setAttribute('style', bitStyle(g, r, c));
   }
 
-  // Pistas de circuito: entran por la izquierda, giran a 45° y terminan en un pad.
-  function circuit(svg, color, done) {
+  // Pistas de circuito en tres estilos. Cada pista es una polilínea que termina en un pad,
+  // y en cada estilo los pads quedan a distancias distintas.
+  //   paralelas: entran por la izquierda, un quiebre a 45°, como un bus (no se cruzan)
+  //   diagonales: suben a 45° desde un borde, paralelas y de largo distinto (no se cruzan)
+  //   todos:      una pista desde cada lado del marco, de largo y destino al azar (pueden cruzarse)
+  const rnd = n => Math.floor(Math.random() * n), flip = (pts, fx, fy) => pts.map(([x, y]) => [fx ? 100 - x : x, fy ? 100 - y : y]);
+  const shuffle = a => a.map(v => [Math.random(), v]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
+  const rot = ([x, y], q) => [[x, y], [100 - y, x], [100 - x, 100 - y], [y, 100 - x]][q];   // giro de 90°·q sobre el centro
+  const TRACES = {
+    paralelas() {
+      const d = Math.random() < 0.5 ? -1 : 1, c1 = 1 + rnd(2), ends = shuffle([4, 5, 7]);
+      return (d > 0 ? [1, 3, 5] : [2, 4, 6]).map((r, k) => [[2, C(r)], [C(c1), C(r)], [C(c1 + 1), C(r + d)], [C(ends[k]), C(r + d)]]);
+    },
+    diagonales() {
+      const fx = Math.random() < 0.5, fy = Math.random() < 0.5;
+      const lens = shuffle([2, 3, 4]);                       // largo de cada diagonal, en bits
+      return [0, 2, 4].map((s, k) => {
+        const d = Math.min(lens[k], 7 - s), up = rnd(2);     // pequeño tramo final vertical, a veces
+        const pts = [[C(s), 98], [C(s), C(7)], [C(s + d), C(7 - d)]];
+        if (up) pts.push([C(s + d), C(6 - d)]);
+        return flip(pts, fx, fy);
+      });
+    },
+    todos() {
+      // Se dibuja cada pista como si entrara por la izquierda y luego se gira al lado que le toca.
+      return [0, 1, 2, 3].map(q => {
+        const r = 1 + rnd(6), a = rnd(3), dr = Math.random() < 0.5 ? -1 : 1, r2 = Math.min(7, Math.max(0, r + dr)), b = 1 + rnd(4);
+        const pts = [[2, C(r)], [C(a), C(r)], [C(a + 1), C(r2)], [C(Math.min(7, a + 1 + b)), C(r2)]];
+        return pts.map(p => rot(p, q));
+      });
+    },
+  };
+  const STYLES = Object.keys(TRACES);
+  let styleTurn = 0;
+
+  function circuit(svg, color, done, style) {
     const layer = document.createElementNS(NS, 'g');
-    // Pistas paralelas (como un bus): filas separadas por dos y el mismo quiebre, para que nunca se crucen.
-    const d = Math.random() < 0.5 ? -1 : 1, rows = d > 0 ? [1, 3, 5] : [2, 4, 6], c1 = 1 + Math.floor(Math.random() * 2);
-    rows.forEach((r, k) => {
-      const r2 = r + d, c2 = c1 + 1, c3 = 5 + Math.floor(Math.random() * 3);
+    const name = TRACES[style] ? style : STYLES[styleTurn++ % STYLES.length];   // 'mixto': alterna los tres
+    TRACES[name]().forEach((pts, k) => {
+      const [cx, cy] = pts[pts.length - 1];
       const p = document.createElementNS(NS, 'path');
-      p.setAttribute('d', `M2 ${C(r)} H${C(c1)} L${C(c2)} ${C(r2)} H${C(c3)}`);
+      p.setAttribute('d', 'M' + pts.map(q => q.join(' ')).join(' L'));
       p.setAttribute('style', `fill:none;stroke:${color};stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round`);
       const pad = document.createElementNS(NS, 'circle');
-      pad.setAttribute('cx', C(c3)); pad.setAttribute('cy', C(r2)); pad.setAttribute('r', 2.6);
+      pad.setAttribute('cx', cx); pad.setAttribute('cy', cy); pad.setAttribute('r', 2.6);
       pad.setAttribute('style', `fill:none;stroke:${color};stroke-width:1.5;opacity:0`);
       layer.appendChild(p); layer.appendChild(pad);
       const len = p.getTotalLength();
@@ -131,7 +164,7 @@
 
   function mount(svg, opts = {}) {
     const seq = (opts.sequence || ['a04']).map(get);
-    const hold = opts.hold || 2000, every = opts.circuitEvery ?? 4;
+    const hold = opts.hold || 4000, every = opts.circuitEvery ?? 4, cstyle = opts.circuitStyle || 'mixto';
     const bits = build(svg);
     let i = 0, n = 0, timer = null, stopped = false;
     paint(bits, seq[0]);
@@ -154,7 +187,7 @@
       const g = seq[i];
       if (every && n % every === 0) {
         paint(bits, { rows: Array(N).fill('........') });        // se apaga, entran las pistas
-        circuit(svg, g.hi || 'var(--bb-hi)', () => sweep(g));
+        circuit(svg, g.hi || 'var(--bb-hi)', () => sweep(g), cstyle);
         timer = setTimeout(next, hold + 700);
       } else {
         sweep(g);
@@ -169,14 +202,15 @@
     document.querySelectorAll('svg[data-bitbox]').forEach(svg => mount(svg, { sequence: [svg.dataset.bitbox] }));
     document.querySelectorAll('svg[data-bitbox-seq]').forEach(svg => mount(svg, {
       sequence: svg.dataset.bitboxSeq.split(',').map(s => s.trim()),
-      hold: +svg.dataset.hold || 2000,
+      hold: +svg.dataset.hold || 4000,
       circuitEvery: svg.dataset.circuit !== undefined ? +svg.dataset.circuit : 4,
+      circuitStyle: svg.dataset.circuitStyle,
     }));
   }
 
   // Dibuja un cuadro fijo: { rows, hi?, lo? } (útil para storyboards e impresos).
   function draw(svg, glyph) { paint(build(svg), glyph); }
 
-  window.AtikBitbox = { mount, get, draw, glyphs: G, apps: APPS, N, geom: { X, C, CS } };
+  window.AtikBitbox = { mount, get, draw, traces: s => TRACES[s](), glyphs: G, apps: APPS, N, geom: { X, C, CS } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auto); else auto();
 })();
