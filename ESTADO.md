@@ -5,7 +5,7 @@ estado: en-desarrollo
 fase: 1
 fase_objetivo: 1
 deploy_url: https://atiktechmx.com
-actualizado: 2026-09-08
+actualizado: 2026-10-12
 ---
 
 # Estado — Sitio atiktechmx.com
@@ -28,6 +28,7 @@ Repo: https://github.com/AinurTulkas/web_atiktechmx · Stack: Estático (GitHub 
 | Página de aprendizaje | 1 | hecho |  | (pendiente de escribir) |
 | Dominio propio (CNAME) en GitHub Pages | 1 | hecho |  | (pendiente de escribir) |
 | Contenido final / textos definitivos | 1 | parcial |  | (pendiente de escribir) |
+| Identidad Jade + caja de bits en todo el sitio | 1 | hecho |  | Abrir atiktechmx.com→logo nuevo en encabezado y pie, caja animada en el inicio, logos de apps en caja en Suite |
 | Subdominios por app apuntando a cada Hosting | 1 | pendiente |  | (pendiente de escribir) |
 <!-- PROGRESO:END -->
 
@@ -46,6 +47,8 @@ Repo: https://github.com/AinurTulkas/web_atiktechmx · Stack: Estático (GitHub 
 <!-- SCORECARD:END -->
 
 ## Notas
+
+- 2026-10-12: rama `marca-jade` con la identidad del kit de marca (paleta Jade, Unbounded + IBM Plex, caja de bits en `assets/bitbox.js`, favicon). Fusionada a `main` y desplegada. Incluye los 14 productos en 8×8 y el nombre unificado como "Atik Tech" en los textos.
 
 - Estados sembrados: `hecho` = estaba marcado como listo en las notas previas;
   `parcial` = a medias; `pendiente` = sin empezar. **Ninguno está en

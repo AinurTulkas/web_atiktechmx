@@ -45,6 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
     items.forEach((el) => el.classList.add('in'));
   }
 
+  // Pie de la caja de bits del inicio: nombre de lo que muestra (una A o una app).
+  const heroBox = document.getElementById('heroBox');
+  const heroName = document.getElementById('heroBoxName');
+  if (heroBox && heroName) heroBox.addEventListener('bitbox:change', (e) => { heroName.textContent = e.detail.name; });
+
   // Carrusel de capturas.
   document.querySelectorAll('.carousel').forEach(carousel => {
     const track = carousel.querySelector('.carousel-track');
