@@ -174,6 +174,9 @@
     }));
   }
 
-  window.AtikBitbox = { mount, get, glyphs: G, apps: APPS, N };
+  // Dibuja un cuadro fijo: { rows, hi?, lo? } (útil para storyboards e impresos).
+  function draw(svg, glyph) { paint(build(svg), glyph); }
+
+  window.AtikBitbox = { mount, get, draw, glyphs: G, apps: APPS, N, geom: { X, C, CS } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auto); else auto();
 })();
