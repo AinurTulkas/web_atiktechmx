@@ -45,10 +45,10 @@ document.addEventListener('DOMContentLoaded', () => {
     items.forEach((el) => el.classList.add('in'));
   }
 
-  // Pie de la caja de bits del inicio: nombre de lo que muestra (una A o una app).
+  // Pie de la caja de bits del inicio: solo nombra apps y sistemas; con las A y la escalera queda vacío.
   const heroBox = document.getElementById('heroBox');
   const heroName = document.getElementById('heroBoxName');
-  if (heroBox && heroName) heroBox.addEventListener('bitbox:change', (e) => { heroName.textContent = e.detail.name; });
+  if (heroBox && heroName) heroBox.addEventListener('bitbox:change', (e) => { heroName.textContent = e.detail.key.startsWith('app:') ? e.detail.name : ''; });
 
   // Carrusel de capturas.
   document.querySelectorAll('.carousel').forEach(carousel => {
