@@ -588,6 +588,16 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
 
+/* Avance del proyecto */
+.av-total { font-size: 1.1rem; margin: 8px 0 4px; }
+.av-fase, .av-fila { display: flex; justify-content: space-between; margin-top: 10px; font-size: .9rem; }
+.av-barra { height: 8px; background: rgba(0,0,0,.1); border-radius: 4px; overflow: hidden; }
+.av-relleno { height: 100%; background: #C41E25; }
+.av-lista { list-style: none; padding: 0; margin: 0; font-size: .85rem; }
+.av-lista li { padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,.08); }
+.av-lista b { display: inline-block; min-width: 76px; text-transform: uppercase; font-size: .7rem; }
+.av-verificado b { color: #1a7f37; } .av-hecho b { color: #9a6700; } .av-parcial b, .av-pendiente b { color: #C41E25; }
+
 </style>
 </head>
 <body>
@@ -636,6 +646,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
       <div class="usuario">
         <button id="btn-instalar" title="Instalar como app en este dispositivo" aria-label="Instalar como app" hidden><span aria-hidden="true">📲</span><span class="txt-sug"> Instalar</span></button>
         <button id="btn-sugerencias" title="Sugerencias de programación" aria-label="Sugerencias de programación"><span aria-hidden="true">📅</span><span class="txt-sug"> Sugerencias</span><span id="sug-contador" class="contador-sug" hidden></span></button>
+        <button id="btn-avance" title="Avance del proyecto" aria-label="Avance del proyecto" hidden><span aria-hidden="true">📈</span><span class="txt-sug"> Avance</span></button>
         <button id="btn-recargar" title="Recargar datos" aria-label="Recargar datos"><span aria-hidden="true">⟳</span><span class="txt-recargar"> Recargar</span></button>
         <span id="usuario-nombre"></span>
         <button id="btn-usuarios" hidden>Usuarios</button>
@@ -742,6 +753,15 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
     </div>
   </div>
 
+  <!-- ---------- Avance del proyecto (ESTADO.md) ---------- -->
+  <div id="modal-avance" class="modal-fondo" hidden>
+    <div class="modal-caja modal-ancha" role="dialog" aria-modal="true" aria-label="Avance del proyecto">
+      <button class="modal-cerrar" id="avance-cerrar" aria-label="Cerrar"><span aria-hidden="true">✕</span></button>
+      <h2>Avance de MiRebranda</h2>
+      <div id="avance-contenido"></div>
+    </div>
+  </div>
+
   <!-- ---------- Panel de usuarios (solo admin) ---------- -->
   <div id="modal-usuarios" class="modal-fondo" hidden>
     <div class="modal-caja" role="dialog" aria-modal="true" aria-label="Usuarios">
@@ -766,7 +786,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
     </div>
   </div>
 
-  <script>
+  <script>window.ESTADO_PROYECTO = {"actualizado": "2026-10-13", "capacidades": [{"capacidad": "Conexión Gmail IMAP + extracción de imagen del correo", "fase": "1", "estado": "verificado", "verificado": "2026-09-05", "prueba": "Correo no leído de un remitente autorizado en la carpeta configurada → se descarga la imagen más pesada del HTML a disco"}, {"capacidad": "Reemplazo de logo del operador (OpenCV template matching)", "fase": "1", "estado": "verificado", "verificado": "2026-09-05", "prueba": "Flyer real con el logo de Regio Operadora visible → queda reemplazado por el logo de la agencia sin cortarle una esquina"}, {"capacidad": "Detección de bloque legal con OCR (Tesseract)", "fase": "1", "estado": "verificado", "verificado": "2026-09-06", "prueba": "Flyer real → el texto legal se extrae para la descripción, y si el OCR no encuentra el bloque con confianza, el flyer queda marcado para revisión manual"}, {"capacidad": "Clasificación de contenido apto/no apto (filtro webinars/info interna)", "fase": "1", "estado": "verificado", "verificado": "2026-09-05", "prueba": "Flyer que no es promoción de viaje real (webinar, capacitación interna) → se descarta antes de generar copys, sin intervención manual"}, {"capacidad": "Versión vertical 9:16 con relleno borroso", "fase": "1", "estado": "verificado", "verificado": "2026-09-06", "prueba": "Flyer real ya personalizado → la vertical muestra el flyer completo, corta las legales si se detectaron con confianza, y el logo de la agencia no se duplica"}, {"capacidad": "Copys de redes con Gemini", "fase": "1", "estado": "verificado", "verificado": "2026-09-05", "prueba": "Flyer real → se generan las 4 secciones (IG/FB, TikTok, WhatsApp, datos de descripción) con la moneda real del flyer"}, {"capacidad": "Review Room + Historial (fecha, checks por red, abrir carpeta)", "fase": "1", "estado": "verificado", "verificado": "2026-09-06", "prueba": "Batch procesado → aparece en Review Room con copy/legal/⚠️ si aplica, y en Historial con fecha, checks por red y botón para abrir la carpeta"}, {"capacidad": "Marca blanca por agencia (logo/color/fuente)", "fase": "1", "estado": "verificado", "verificado": "2026-09-05", "prueba": "Una agencia sube su logo → se pega con su silueta real (sin fondo cuadrado) en flyers, vertical, ventana y tray"}, {"capacidad": "Empaquetado PyInstaller + instalador Inno Setup", "fase": "1", "estado": "verificado", "verificado": "2026-09-07", "prueba": "Correr el build + ISCC → genera un instalador .exe funcional con ícono propio, publicado como release de GitHub"}, {"capacidad": "Identidad de marca MiRebranda (ícono de app/instalador)", "fase": "1", "estado": "verificado", "verificado": "2026-09-07", "prueba": "Instalar la app → el .exe, el instalador y el ícono de ventana/tray muestran el fénix, no el genérico de PyInstaller"}, {"capacidad": "Código y releases publicados en GitHub", "fase": "1", "estado": "verificado", "verificado": "2026-09-07", "prueba": "El repo tiene el código completo (no solo el README) y releases descargables desde v1.0.1 hasta v1.1.0"}, {"capacidad": "Deduplicación de correos por Message-ID", "fase": "1", "estado": "verificado", "verificado": "2026-09-17", "prueba": "Reprocesar el mismo correo dos veces → la segunda vez se ignora sin duplicar el flyer"}, {"capacidad": "Panel de avance en el calendario web", "fase": "2", "estado": "hecho", "verificado": "", "prueba": "Abrir el calendario con sesión → botón «Avance» → muestra % de capacidades, scorecard y la lista de ESTADO.md vigente"}], "scorecard": [{"eje": "Planeación / spec", "valor": 1.0}, {"eje": "Núcleo funcional", "valor": 1.0}, {"eje": "Datos + reglas", "valor": 0.75}, {"eje": "Integraciones", "valor": 0.75}, {"eje": "Pruebas / QA", "valor": 0.75}, {"eje": "Deploy / producción", "valor": 0.75}, {"eje": "Monetización / legal", "valor": 0.0}]};</script>
+<script>
 // ============================================================================
 // Planificador de publicaciones — funciones PURAS (sin DOM ni Firebase), para poder
 // probar cada regla por separado. Se carga como script clásico antes de app.js (y
@@ -2440,6 +2461,44 @@ document.getElementById("sug-aceptar-todas").addEventListener("click", async () 
 });
 
 // ============================================================================
+// AVANCE DEL PROYECTO: método de METODO-AVANCE.md (pendiente 0 · parcial 0.4 · hecho 0.8 · verificado 1)
+// Los datos salen de ESTADO.md al armar la página (build.py); sin ellos el botón no aparece.
+// ============================================================================
+const modalAvance = document.getElementById("modal-avance");
+const PESO_ESTADO = { pendiente: 0, parcial: 0.4, hecho: 0.8, verificado: 1 };
+
+function renderAvance() {
+  const d = window.ESTADO_PROYECTO;
+  const caps = d.capacidades.filter(c => c.estado !== "descartado");
+  const pct = (fase) => {
+    const l = caps.filter(c => !fase || Number(c.fase) === fase);
+    return l.length ? Math.round(100 * l.reduce((a, c) => a + (PESO_ESTADO[c.estado] ?? 0), 0) / l.length) : null;
+  };
+  const fases = [...new Set(caps.map(c => Number(c.fase)))].sort();
+  const barra = (v) => `<div class="av-barra"><div class="av-relleno" style="width:${v}%"></div></div>`;
+  const prom = d.scorecard.length ? Math.round(100 * d.scorecard.reduce((a, e) => a + e.valor, 0) / d.scorecard.length) : null;
+  const total = pct(0);
+  const aviso = (total !== null && prom !== null && Math.abs(total - prom) > 15)
+    ? `<p class="hint">⚠ El % de capacidades (${total}%) y el promedio del scorecard (${prom}%) difieren mucho: una de las dos mediciones está mal.</p>` : "";
+  document.getElementById("avance-contenido").innerHTML =
+    `<p class="hint">Actualizado ${escapeHtml(d.actualizado)}. «Hecho» vale 0.8 y solo «verificado» vale 1: lo que no se probó contra producción se ve en el número.</p>` +
+    `<div class="av-total"><strong>${total ?? 0}%</strong> capacidades${prom !== null ? ` · ${prom}% scorecard` : ""}</div>${barra(total ?? 0)}${aviso}` +
+    fases.map(f => `<div class="av-fase"><span>Fase ${f}</span><strong>${pct(f)}%</strong></div>${barra(pct(f))}`).join("") +
+    `<h3>Scorecard</h3>` + d.scorecard.map(e =>
+      `<div class="av-fila"><span>${escapeHtml(e.eje)}</span><span>${Math.round(e.valor * 100)}%</span></div>${barra(Math.round(e.valor * 100))}`).join("") +
+    `<h3>Capacidades</h3><ul class="av-lista">` + caps.map(c =>
+      `<li class="av-${escapeHtml(c.estado)}" title="${escapeHtml(c.prueba)}"><b>${escapeHtml(c.estado)}</b> ${escapeHtml(c.capacidad)}${c.verificado ? ` <small>${escapeHtml(c.verificado)}</small>` : ""}</li>`).join("") + `</ul>`;
+}
+if (window.ESTADO_PROYECTO) {
+  document.getElementById("btn-avance").hidden = false;
+  document.getElementById("btn-avance").addEventListener("click", () => {
+    renderAvance();
+    abrirDialogo(modalAvance, document.getElementById("avance-cerrar"));
+  });
+  document.getElementById("avance-cerrar").addEventListener("click", () => cerrarDialogo(modalAvance));
+}
+
+// ============================================================================
 // CERRAR MODALES: tecla Escape y clic en el fondo oscuro
 // ============================================================================
 let focoPrevio = null;
@@ -2457,13 +2516,13 @@ function cerrarDialogo(fondo) {
 }
 
 function cerrarModalesAbiertos() {
-  [modalSugerencias, modalUsuarios, modalPost].forEach(f => { if (!f.hidden) cerrarDialogo(f); });
+  [modalSugerencias, modalUsuarios, modalPost, modalAvance].forEach(f => { if (!f.hidden) cerrarDialogo(f); });
 }
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { cerrarModalesAbiertos(); return; }
   // Tab se queda dentro del diálogo abierto
   if (e.key === "Tab") {
-    const abierto = [modalSugerencias, modalUsuarios, modalPost].find(f => !f.hidden);
+    const abierto = [modalSugerencias, modalUsuarios, modalPost, modalAvance].find(f => !f.hidden);
     if (!abierto) return;
     const foc = Array.from(abierto.querySelectorAll("button, input, select, textarea, [tabindex]:not([tabindex='-1'])"))
       .filter(el => !el.disabled && !el.hidden && el.offsetParent !== null);
@@ -2474,7 +2533,7 @@ document.addEventListener("keydown", (e) => {
     else if (!abierto.contains(document.activeElement)) { e.preventDefault(); primero.focus(); }
   }
 });
-[modalPost, modalUsuarios, modalSugerencias].forEach(fondo => {
+[modalPost, modalUsuarios, modalSugerencias, modalAvance].forEach(fondo => {
   // solo si el clic fue en el fondo mismo, no dentro de la caja
   fondo.addEventListener("click", (e) => { if (e.target === fondo) cerrarDialogo(fondo); });
 });
