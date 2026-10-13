@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="color-scheme" content="light dark" />
 <meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#C41E25" />
+<link rel="manifest" href="pip3mktr0l0.webmanifest" />
+<link rel="apple-touch-icon" href="pip3mktr0l0-apple-180.png" />
 <title>Control de Publicaciones — Cherry Travels</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -573,6 +576,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .etiqueta-sugerida { font-size: 12px; font-weight: 700; color: var(--ink-muted); margin-top: 4px; }
 .chip-post.sugerida { outline: 2px dashed var(--ink-muted); outline-offset: 1px; }
 
+.accion-auto { font-size: 12px; color: var(--ink-muted); margin-left: 6px; }
+
 /* El atributo hidden debe ganar siempre: .modal-fondo y .app definen display y lo anulaban */
 [hidden] { display: none !important; }
 .form-msg { grid-column: span 2; margin: 0; font-size: 13px; font-weight: 700; }
@@ -629,6 +634,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
       </div>
 
       <div class="usuario">
+        <button id="btn-instalar" title="Instalar como app en este dispositivo" aria-label="Instalar como app" hidden><span aria-hidden="true">📲</span><span class="txt-sug"> Instalar</span></button>
         <button id="btn-sugerencias" title="Sugerencias de programación" aria-label="Sugerencias de programación"><span aria-hidden="true">📅</span><span class="txt-sug"> Sugerencias</span><span id="sug-contador" class="contador-sug" hidden></span></button>
         <button id="btn-recargar" title="Recargar datos" aria-label="Recargar datos"><span aria-hidden="true">⟳</span><span class="txt-recargar"> Recargar</span></button>
         <span id="usuario-nombre"></span>
@@ -802,6 +808,7 @@ const PLAN = {
   anticipacionMin: 30,      // para "hoy": el hueco debe quedar al menos 30 min adelante
   historiaDespuesMin: 90,   // la historia (republicar el flyer) sale 90 min después de Instagram, sin pasar de las 20:00
   diasDeEspera: 1,          // sin vigencia: el primer día posible es mañana, no hoy
+  autoPublicarDespuesMin: 5,   // una publicación «Programada» se da por publicada 5 min después de su hora
   horizonteDias: 90,
   metas: { tip: { min: 2 }, video: { min: 3, max: 4 } },
 };
@@ -1065,7 +1072,7 @@ function accionesDelDia(posts, dia, ahora = new Date()) {
     redes.forEach(r => {
       const hora = _aFecha(horarios[r]) || fecha;
       if (_clave(hora) !== k) return;
-      out.push({ postId: p.id, tipoPost: tipoDe(p), clase: "feed", red: r, hora, hecha: hechas[r] === true || p.estado === "publicada" });
+      out.push({ postId: p.id, tipoPost: tipoDe(p), clase: "feed", red: r, hora, hecha: hechas[r] === true || p.estado === "publicada", auto: (p.hechasAuto || {})[r] === true });
     });
     const h = historiaDe(p);
     if (h && _clave(h) === k) out.push({ postId: p.id, tipoPost: tipoDe(p), clase: "historia", red: "instagram", hora: h, hecha: p.historiaHecha === true });
@@ -1081,6 +1088,29 @@ function pendientesDeHoy(posts, ahora = new Date()) {
   const acciones = accionesDelDia(posts, ahora, ahora);
   const faltan = acciones.filter(a => !a.hecha);
   return { faltan: faltan.length, atrasadas: faltan.filter(a => a.vencida).length, total: acciones.length };
+}
+
+// Publicaciones «Programada» cuyo horario ya pasó: se SUPONE que la red las publicó (la persona las
+// programó directo en cada app), así que se marcan como hechas. Reglas:
+//  - solo `estado === "programada"` (lo que la persona ya movió a Programada);
+//  - cada red por separado, 5 min después de su hora (autoPublicarDespuesMin);
+//  - lo que la persona haya desmarcado a mano (`hechas[red] === false`) NO se vuelve a marcar solo;
+//  - las historias y los reels no se tocan: siguen pendientes para marcarlos a mano.
+// Devuelve [{id, redes: [...nuevas], completa}]; `completa` = ya no queda ninguna red por marcar.
+function autoPublicables(posts, ahora = new Date(), plan = PLAN) {
+  const limite = ahora.getTime() - plan.autoPublicarDespuesMin * 60000;
+  const out = [];
+  posts.forEach(p => {
+    if (p.estado !== "programada") return;
+    const fecha = _aFecha(p.fechaProgramada);
+    if (!fecha) return;
+    const hechas = p.hechas || {}, horarios = p.horarios || {};
+    const redes = redesDeAgenda(p);
+    const nuevas = redes.filter(r => hechas[r] === undefined && (_aFecha(horarios[r]) || fecha).getTime() <= limite);
+    if (!nuevas.length) return;
+    out.push({ id: p.id, redes: nuevas, completa: redes.every(r => hechas[r] === true || nuevas.includes(r)) });
+  });
+  return out;
 }
 
 // Redes en las que debe publicarse un post (para saber cuándo está "publicada" del todo).
@@ -1345,6 +1375,8 @@ onAuthStateChanged(auth, async (user) => {
 
   await cargarDatos();
   render();
+  aplicarAutoPublicado();
+  if (!estadoApp.relojAuto) estadoApp.relojAuto = setInterval(aplicarAutoPublicado, 60000);
 });
 
 // ============================================================================
@@ -1377,6 +1409,7 @@ async function cargarDatos() {
 document.getElementById("btn-recargar").addEventListener("click", async () => {
   await cargarDatos();
   render();
+  aplicarAutoPublicado();
 });
 
 // ============================================================================
@@ -1757,7 +1790,7 @@ function abrirModal(postId) {
   }
 
   const info = estadoInfo(post.estado);
-  document.getElementById("etapa-actual-texto").textContent = info.label;
+  document.getElementById("etapa-actual-texto").textContent = info.label + (post.estado === "publicada" && post.publicadaAuto ? " (automático)" : "");
   document.getElementById("etiqueta-atrasada").hidden = !esAtrasada(post);
 
   // Botones para mover de etapa (avanzar es el caso normal; también se
@@ -1848,8 +1881,14 @@ document.getElementById("btn-guardar").addEventListener("click", async () => {
     actualizadoEn: serverTimestamp(),
     ultimoEditor: estadoApp.usuarioUid,
   };
-  const hechas = {};
-  REDES_PLAN.forEach(r => { hechas[r] = document.getElementById("hecha-" + r).checked; });
+  // Solo se guarda lo que la persona decidió: marcado = true; desmarcado de algo que estaba hecho = false
+  // (así no se vuelve a marcar solo). Una red que nunca se tocó queda sin valor y el automático la atiende.
+  const previas = post.hechas || {};
+  const hechas = { ...previas };
+  REDES_PLAN.forEach(r => {
+    if (document.getElementById("hecha-" + r).checked) hechas[r] = true;
+    else if (previas[r] === true) hechas[r] = false;
+  });
   cambios.hechas = hechas;
   if (!document.getElementById("fila-historia").hidden) cambios.historiaHecha = document.getElementById("campo-historia-hecha").checked;
   Object.assign(cambios, avanceDeEstado(post, hechas, horarios, cambios.plataformas));
@@ -1906,6 +1945,7 @@ async function moverEtapa(postId, nuevoEstado) {
   try {
     await updateDoc(doc(db, "posts", postId), {
       estado: nuevoEstado,
+      publicadaAuto: false,
       actualizadoEn: serverTimestamp(),
       ultimoEditor: estadoApp.usuarioUid,
     });
@@ -1917,6 +1957,7 @@ async function moverEtapa(postId, nuevoEstado) {
     return;
   }
   post.estado = nuevoEstado;
+  post.publicadaAuto = false;
   post.actualizadoEn = Timestamp.now();
   cerrarDialogo(modalPost);
   render();
@@ -2102,6 +2143,65 @@ async function copiarTexto(btn, texto, sinTexto = "", campo = null) {
 }
 
 // ============================================================================
+// INSTALAR COMO APP (PWA): service worker + botón «Instalar»
+// ============================================================================
+// El service worker deja instalar la página como app y abrir la última versión sin internet.
+// En file:// (pruebas locales) no existe: se ignora sin ruido.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("pip3mktr0l0-sw.js", { scope: "pip3mktr0l0.html" }).catch(() => {});
+  });
+}
+// Chrome (Android) avisa cuando la página se puede instalar: se muestra el botón y, al pulsarlo,
+// se abre el cuadro de instalación. Ya instalada (modo standalone) o tras instalar, se oculta.
+let eventoInstalar = null;
+const botonInstalar = document.getElementById("btn-instalar");
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  eventoInstalar = e;
+  if (!window.matchMedia("(display-mode: standalone)").matches) botonInstalar.hidden = false;
+});
+window.addEventListener("appinstalled", () => { eventoInstalar = null; botonInstalar.hidden = true; });
+botonInstalar.addEventListener("click", async () => {
+  if (!eventoInstalar) return;
+  eventoInstalar.prompt();
+  await eventoInstalar.userChoice;
+  eventoInstalar = null;
+  botonInstalar.hidden = true;
+});
+
+// ============================================================================
+// MARCAR SOLO LO PUBLICADO: lo «Programada» cuya hora ya pasó se da por publicado en esa red
+// ============================================================================
+let autoOcupado = false;
+async function aplicarAutoPublicado() {
+  if (window.__sinAutoPublicar || autoOcupado) return;
+  const lista = autoPublicables(estadoApp.posts, new Date());
+  if (!lista.length) return;
+  autoOcupado = true;
+  try {
+    for (const a of lista) {
+      const post = estadoApp.posts.find(p => p.id === a.id);
+      if (!post) continue;
+      const hechas = { ...(post.hechas || {}) }, auto = { ...(post.hechasAuto || {}) };
+      a.redes.forEach(r => { hechas[r] = true; auto[r] = true; });
+      const cambios = { hechas, hechasAuto: auto, actualizadoEn: serverTimestamp(), ultimoEditor: "automatico" };
+      if (a.completa) { cambios.estado = "publicada"; cambios.publicadaAuto = true; }
+      try {
+        await updateDoc(doc(db, "posts", post.id), cambios);
+      } catch (err) {
+        console.error("No se pudo marcar como publicada:", err);
+        break;
+      }
+      Object.assign(post, cambios, { actualizadoEn: Timestamp.now() });
+    }
+  } finally {
+    autoOcupado = false;
+  }
+  render();
+}
+
+// ============================================================================
 // AGENDA DEL DÍA — "Hoy toca publicar": lo que hay que hacer, en orden de hora
 // ============================================================================
 function textoParaAccion(post, red) {
@@ -2128,6 +2228,7 @@ async function marcarAccion(postId, clase, red, valor) {
     const hechas = { ...(post.hechas || {}), [red]: valor };
     cambios.hechas = hechas;
     Object.assign(cambios, avanceDeEstado(post, hechas));
+    if (!valor && post.estado === "publicada") { cambios.estado = "programada"; cambios.publicadaAuto = false; }
   }
   try {
     await updateDoc(doc(db, "posts", post.id), cambios);
@@ -2170,6 +2271,7 @@ function renderAgenda() {
         <div class="accion-info">
           <strong>${escapeHtml(etiqueta)}</strong> <span class="accion-tipo">${ETIQUETA_TIPO[a.tipoPost]}</span>
           ${a.vencida ? '<span class="accion-atraso">⚠ Atrasada</span>' : ""}
+          ${a.auto && a.hecha ? '<span class="accion-auto">(marcada automáticamente)</span>' : ""}
           <div class="accion-titulo">${escapeHtml(titulo(a.postId))}</div>
           ${nota ? `<div class="accion-nota">${escapeHtml(nota)}</div>` : ""}
         </div>

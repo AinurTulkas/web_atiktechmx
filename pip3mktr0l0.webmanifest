@@ -1,0 +1,33 @@
+{
+  "id": "/pip3mktr0l0.html",
+  "name": "Control de Publicaciones — Cherry Travels",
+  "short_name": "Publicaciones",
+  "description": "Calendario de publicaciones de Cherry Travels: qué publicar, cuándo y en qué red.",
+  "start_url": "/pip3mktr0l0.html",
+  "scope": "/pip3mktr0l0.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "es-MX",
+  "background_color": "#FFF3E3",
+  "theme_color": "#C41E25",
+  "icons": [
+    {
+      "src": "/pip3mktr0l0-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pip3mktr0l0-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pip3mktr0l0-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
