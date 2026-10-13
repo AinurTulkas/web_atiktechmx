@@ -489,6 +489,16 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .meta-item.falta { color: var(--danger-text); }
 .meta-item.ok { color: var(--ok-text); }
 
+.meta-hoy {
+  background: var(--card); border-radius: 999px; padding: 2px 12px;
+  font-size: 13px; font-weight: 800; min-height: 0; color: var(--ink);
+  border: 1px solid var(--line);
+}
+.meta-hoy.ok { color: var(--ok-text); }
+.meta-hoy.falta { color: var(--danger-text); border-color: var(--danger-text); }
+.vista-btn .contador-sug { background: var(--accion); color: var(--accion-fg); }
+.vista-btn.activa .contador-sug { background: var(--accion-fg); color: var(--accion); }
+
 /* ---------- Botón y panel de sugerencias ---------- */
 #btn-sugerencias.con-sugerencias { background: var(--accion); color: var(--accion-fg); }
 .contador-sug {
@@ -608,7 +618,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
         <button class="vista-btn" data-vista="mes" aria-pressed="false">Mes</button>
         <button class="vista-btn" data-vista="semana" aria-pressed="false">Semana</button>
         <button class="vista-btn" data-vista="dia" aria-pressed="false">Día</button>
-        <button class="vista-btn" data-vista="agenda" aria-pressed="false">Agenda</button>
+        <button class="vista-btn" data-vista="agenda" aria-pressed="false">Agenda<span id="agenda-contador" class="contador-sug" hidden></span></button>
       </nav>
 
       <div class="navegacion-fecha">
@@ -1063,6 +1073,14 @@ function accionesDelDia(posts, dia, ahora = new Date()) {
   out.sort((a, b) => a.hora - b.hora || (a.clase === "historia") - (b.clase === "historia") || REDES_PLAN.indexOf(a.red) - REDES_PLAN.indexOf(b.red));
   out.forEach(a => { a.vencida = !a.hecha && new Date(a.hora.getTime() + 60 * 60000) < ahora; });
   return out;
+}
+
+// Lo que falta por hacer HOY: {faltan, atrasadas, total}. `atrasadas` = faltan y ya pasó más de
+// 1 h de su hora. Es lo que muestra el aviso de arriba y el contador del botón Agenda.
+function pendientesDeHoy(posts, ahora = new Date()) {
+  const acciones = accionesDelDia(posts, ahora, ahora);
+  const faltan = acciones.filter(a => !a.hecha);
+  return { faltan: faltan.length, atrasadas: faltan.filter(a => a.vencida).length, total: acciones.length };
 }
 
 // Redes en las que debe publicarse un post (para saber cuándo está "publicada" del todo).
@@ -2197,12 +2215,29 @@ function renderMetas() {
   const importa = _inicioDia(new Date()) <= _finDia(_masDias(m.lunes, 6));   // las metas pesan de esta semana en adelante
   const marca = ok => (!importa ? "" : ok ? "✓ " : "⚠ ");
   const clase = ok => "meta-item " + (!importa ? "" : ok ? "ok" : "falta");
+  // Aviso de HOY (siempre, sin importar la semana que se esté viendo): cuántas publicaciones e
+  // historias faltan por hacer; al pulsarlo abre la Agenda de hoy.
+  const hoy = pendientesDeHoy(estadoApp.posts, new Date());
+  const textoHoy = hoy.total === 0 ? "Hoy: nada programado"
+    : hoy.faltan === 0 ? "Hoy: todo al día ✓"
+    : `Hoy: te faltan ${hoy.faltan} de ${hoy.total}` + (hoy.atrasadas ? ` (${hoy.atrasadas} atrasadas)` : "");
+  const claseHoy = hoy.faltan === 0 && hoy.total > 0 ? "ok" : hoy.atrasadas ? "falta" : "";
+  const contadorAgenda = document.getElementById("agenda-contador");
+  if (contadorAgenda) { contadorAgenda.textContent = String(hoy.faltan); contadorAgenda.hidden = hoy.faltan === 0; }
   el.innerHTML =
+    `<button type="button" id="meta-hoy" class="meta-item meta-hoy ${claseHoy}" title="Abrir la agenda de hoy">${textoHoy}</button>` +
     `<span class="meta-item">Semana ${_fechaCorta(m.lunes)} – ${_fechaCorta(finSemana)}</span>` +
     `<span class="meta-item">Promociones ${m.promos}</span>` +
     `<span class="${clase(m.tip.ok)}">${marca(m.tip.ok)}Tips ${m.tip.n}/${m.tip.min}</span>` +
     `<span class="${clase(m.video.ok)}">${marca(m.video.ok)}Videos ${m.video.n}/${m.video.min}–${m.video.max}</span>`;
 }
+
+document.getElementById("metas").addEventListener("click", e => {
+  if (!e.target.closest("#meta-hoy")) return;
+  estadoApp.fechaAncla = new Date();
+  estadoApp.vista = "agenda";
+  render();
+});
 
 function calcularSugerencias() {
   return planificarTodo(estadoApp.posts, new Date());
