@@ -558,6 +558,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
   .accion-botones { width: 100%; justify-content: flex-start; }
 }
 
+/* Publicación que aún no tiene fecha: se ve en el día sugerido, con borde punteado */
+.tarjeta-post.sugerida { border-style: dashed; }
+.etiqueta-sugerida { font-size: 12px; font-weight: 700; color: var(--ink-muted); margin-top: 4px; }
+.chip-post.sugerida { outline: 2px dashed var(--ink-muted); outline-offset: 1px; }
+
 /* El atributo hidden debe ganar siempre: .modal-fondo y .app definen display y lo anulaban */
 [hidden] { display: none !important; }
 .form-msg { grid-column: span 2; margin: 0; font-size: 13px; font-weight: 700; }
@@ -759,6 +764,8 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 //  - Tips y videos se toman por separado (no cuentan para el límite de 2) y tienen
 //    metas por semana: mínimo 2 tips y 3-4 videos.
 //  - Cada flyer sale en TODAS las redes; cada red lleva su horario (escalonado).
+//  - Lo recién subido NO se programa para el día en curso, aunque haya hueco; solo las
+//    publicaciones con VIGENCIA (fecha límite de reserva) pueden salir hoy.
 // ============================================================================
 
 const PLAN = {
@@ -780,6 +787,7 @@ const PLAN = {
   separacionMin: 45,        // dos publicaciones del mismo día no se encimen
   anticipacionMin: 30,      // para "hoy": el hueco debe quedar al menos 30 min adelante
   historiaDespuesMin: 90,   // la historia (republicar el flyer) sale 90 min después de Instagram, sin pasar de las 20:00
+  diasDeEspera: 1,          // sin vigencia: el primer día posible es mañana, no hoy
   horizonteDias: 90,
   metas: { tip: { min: 2 }, video: { min: 3, max: 4 } },
 };
@@ -896,6 +904,7 @@ function _elegirBase(dia, usadas, indicePreferido, ahora, plan, fila) {
 function planificarTodo(posts, ahora = new Date(), plan = PLAN) {
   const hoy = _inicioDia(ahora);
   const horizonte = _masDias(hoy, plan.horizonteDias);
+  const primerDia = _masDias(hoy, plan.diasDeEspera);   // primer día para lo que NO tiene vigencia
   const cuenta = {};   // día -> promociones ya puestas (para el límite de 2)
   const horas = {};    // día -> minutos ocupados por cualquier publicación (para no encimar)
   const cuentaTipo = { tip: {}, video: {} };
@@ -929,7 +938,7 @@ function planificarTodo(posts, ahora = new Date(), plan = PLAN) {
     }
     const limite = vig && vig.fecha < horizonte ? vig.fecha : horizonte;
     const opciones = [];
-    for (let d = hoy; d <= limite; d = _masDias(d, 1)) {
+    for (let d = vig ? hoy : primerDia; d <= limite; d = _masDias(d, 1)) {
       if (plan.diasSinPublicar.includes(d.getDay())) continue;
       const k = _clave(d), n = cuenta[k] || 0;
       const base = _elegirBase(d, horas[k] || [], n, ahora, plan, plan.rotacion[_numDia(d) % plan.rotacion.length]);
@@ -963,7 +972,7 @@ function planificarTodo(posts, ahora = new Date(), plan = PLAN) {
       const ocupado = d => cuentaTipo[tipo][_clave(d)] || 0;
       const vecino = d => ocupado(_masDias(d, -1)) || ocupado(_masDias(d, 1));
       const candidatos = [];
-      for (let d = hoy; d <= horizonte; d = _masDias(d, 1)) {
+      for (let d = primerDia; d <= horizonte; d = _masDias(d, 1)) {
         if (plan.diasSinPublicar.includes(d.getDay()) || ocupado(d)) continue;
         const k = _clave(d), usadas = horas[k] || [];
         const filaExtra = plan.rotacionExtra.map((_, i) => plan.rotacionExtra[(_numDia(d) + i) % plan.rotacionExtra.length]);
@@ -1345,8 +1354,18 @@ document.getElementById("btn-recargar").addEventListener("click", async () => {
 // Un post "vive" en el día de su fecha programada si ya la tiene;
 // si no, vive en el día en que se creó (así un post "por diseñar" aparece
 // hoy, y al programarse se mueve visualmente a su fecha de publicación).
+// Un post "vive" en el día de su fecha programada. Si todavía no la tiene, vive en el día que se
+// SUGIERE publicarlo (aunque siga en «Por diseñar»): así el calendario ya muestra el plan completo
+// y lo recién subido no se queda estorbando en el día en curso. Sin sugerencia posible (p. ej. su
+// vigencia ya pasó) se queda en el día en que se creó.
+function sugerenciaDe(post) {
+  return !post.fechaProgramada && estadoApp.mapaSugeridas ? estadoApp.mapaSugeridas[post.id] || null : null;
+}
+
 function fechaDelPost(post) {
   if (post.fechaProgramada) return post.fechaProgramada.toDate();
+  const sug = sugerenciaDe(post);
+  if (sug) return sug.horarios.instagram || Object.values(sug.horarios)[0] || sug.dia;
   if (post.creadoEn) return post.creadoEn.toDate();
   return new Date();
 }
@@ -1424,6 +1443,10 @@ function irADia(fecha) {
 const contenedor = document.getElementById("contenedor-vista");
 
 function render() {
+  // Sugerencias del momento: las usan el botón, el panel y la ubicación de lo que aún no tiene fecha.
+  const plan = calcularSugerencias();
+  estadoApp.mapaSugeridas = {};
+  plan.sugerencias.forEach(s => { estadoApp.mapaSugeridas[s.id] = s; });
   document.querySelectorAll(".vista-btn").forEach(b => {
     const activa = b.dataset.vista === estadoApp.vista;
     b.classList.toggle("activa", activa);
@@ -1509,7 +1532,7 @@ function renderMes() {
       ESTADOS.findIndex(e => e.id === x.estado) - ESTADOS.findIndex(e => e.id === y.estado));
     const chips = ordenados.slice(0, 2).map(p => {
       const e = estadoInfo(p.estado);
-      return `<div class="chip-post ${esAtrasada(p) ? "atrasada" : ""}" style="${varsEtapa(e)}">${icoEtapa(e)}<span class="chip-txt">${escapeHtml(p.titulo || "(sin título)")}</span></div>`;
+      return `<div class="chip-post ${esAtrasada(p) ? "atrasada" : ""} ${sugerenciaDe(p) ? "sugerida" : ""}" style="${varsEtapa(e)}">${icoEtapa(e)}<span class="chip-txt">${escapeHtml(p.titulo || "(sin título)")}</span></div>`;
     }).join("");
     const mas = posts.length > 2 ? `<div class="chips-mas">+${posts.length - 2} más</div>` : "";
 
@@ -1621,7 +1644,7 @@ function tarjetaHtml(post, color) {
   const imagenValida = typeof post.imagenUrl === "string" && post.imagenUrl.startsWith(PREFIJO_IMAGEN_VALIDO);
   const plataformasTexto = (post.plataformas || []).join(", ");
   return `
-    <div class="tarjeta-post ${atrasada ? "atrasada" : ""}" style="--linea:${color}" data-id="${escapeHtml(post.id)}" data-titulo="${escapeHtml(post.titulo || "(sin título)")}">
+    <div class="tarjeta-post ${atrasada ? "atrasada" : ""} ${sugerenciaDe(post) ? "sugerida" : ""}" style="--linea:${color}" data-id="${escapeHtml(post.id)}" data-titulo="${escapeHtml(post.titulo || "(sin título)")}">
       ${imagenValida ? `<img src="${escapeHtml(post.imagenUrl)}" alt="" />` : ""}
       <div class="titulo">${escapeHtml(post.titulo || "(sin título)")}</div>
       <div class="meta">
@@ -1629,6 +1652,7 @@ function tarjetaHtml(post, color) {
         <span>${escapeHtml(hora)}</span>
       </div>
       ${atrasada ? '<div class="etiqueta-atrasada-mini">⚠ Atrasada</div>' : ""}
+      ${sugerenciaDe(post) ? '<div class="etiqueta-sugerida">📅 Fecha sugerida — acéptala en «Sugerencias»</div>' : ""}
     </div>`;
 }
 
