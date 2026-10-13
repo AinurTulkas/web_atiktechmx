@@ -73,12 +73,13 @@
           <li>Contenido organizado por tema y por lenguaje</li>
           <li>Pensado como referencia rápida, no como curso largo</li>
         </ul>
-        <!-- Enlaces de descarga: aún no hay URLs publicadas. Quitar aria-disabled y poner href al publicarlas. -->
+        <!-- Descargas de PathMentor. El .exe apunta a la versión 0.1.4 (Netlify): actualizar la URL en cada release de Windows (scripts/release_windows.sh). El APK usa /releases/latest, no requiere cambios. -->
         <div class="stores">
-          <a class="btn btn-dark" aria-disabled="true">App Store · Próximamente</a>
-          <a class="btn btn-dark" aria-disabled="true">Google Play · Próximamente</a>
-          <a class="btn btn-dark" aria-disabled="true">Versión web · Próximamente</a>
+          <a class="btn btn-dark" href="https://pathmentor-app.web.app" target="_blank" rel="noopener">Abrir la versión web</a>
+          <a class="btn btn-outline-light" href="https://fancy-otter-b1d8be.netlify.app/downloads/PathMentor_Setup_0.1.4.exe">Descargar para Windows (.exe)</a>
+          <a class="btn btn-outline-light" href="https://github.com/AinurTulkas/pathmentor-releases/releases/latest/download/PathMentor.apk">Descargar para Android (.apk)</a>
         </div>
+        <p class="soon" style="font-size:0.9rem">Versión de pruebas 0.1.4. El instalador de Windows aún no tiene firma digital: al abrirlo, Windows muestra «Windows protegió su PC»; elige «Más información» y luego «Ejecutar de todas formas». En Android, permite «Instalar apps desconocidas» para tu navegador.</p>
       </div>
       <div class="reveal">
         <h3 style="margin-bottom:20px">Los 10 lenguajes</h3>
