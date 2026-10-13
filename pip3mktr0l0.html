@@ -370,7 +370,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
   border-radius: 18px;
   padding: 24px;
   width: 100%;
-  max-width: 520px;
+  max-width: 600px;
   max-height: 90vh;
   overflow: auto;
   position: relative;
@@ -674,6 +674,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
             <input type="time" id="campo-hora" />
           </span>
         </label>
+        <p id="nota-sugerencia" class="hint nota-sugerencia" hidden></p>
         <fieldset class="redes-textos">
           <legend>Texto y horario por red</legend>
           <div id="bloques-redes"></div>
@@ -783,7 +784,10 @@ const PLAN = {
   ],
   // Horas base para tips y videos (rotan igual), entre los huecos de las promociones.
   rotacionExtra: [16 * 60, 17 * 60, 16 * 60 + 30, 17 * 60 + 30, 15 * 60 + 30, 18 * 60],
-  desfaseRedes: { instagram: 0, facebook: 15, whatsapp: 30, tiktok: 45 },   // minutos
+  // Redes en las que SIEMPRE se publica. WhatsApp queda fuera por ahora (aún no hay clientes
+  // agregados); para activarlo basta agregar "whatsapp" aquí.
+  redes: ["instagram", "facebook", "tiktok"],
+  desfaseRedes: { instagram: 0, facebook: 15, tiktok: 30, whatsapp: 45 },   // minutos
   separacionMin: 45,        // dos publicaciones del mismo día no se encimen
   anticipacionMin: 30,      // para "hoy": el hueco debe quedar al menos 30 min adelante
   historiaDespuesMin: 90,   // la historia (republicar el flyer) sale 90 min después de Instagram, sin pasar de las 20:00
@@ -815,7 +819,15 @@ function tipoDe(post) { return post.tipo === "tip" || post.tipo === "video" ? po
 
 function redesDePost(post) {
   const r = [...new Set((post.plataformas || []).map(p => RED_DE_PLATAFORMA[p]).filter(Boolean))];
-  return r.length ? r : ["instagram", "facebook", "tiktok"];
+  return r.length ? r : [...PLAN.redes];
+}
+
+// Redes a las que se programa una publicación: siempre las de PLAN.redes (Instagram, Facebook y
+// TikTok) más las que la persona haya marcado además, en el orden de siempre.
+function redesAProgramar(post, plan = PLAN) {
+  const extra = (post.plataformas || []).map(p => RED_DE_PLATAFORMA[p]).filter(Boolean);
+  const todas = new Set([...plan.redes, ...extra]);
+  return REDES_PLAN.filter(r => todas.has(r));
 }
 
 function horariosDeHueco(dia, baseMin, redes, plan = PLAN) {
@@ -953,7 +965,7 @@ function planificarTodo(posts, ahora = new Date(), plan = PLAN) {
       avisos.push({ id: p.id, tipo: "sin_hueco", texto: vig ? "No hay ningún día disponible antes de su vigencia." : "No encontré hueco en los próximos 90 días." });
       continue;
     }
-    const redes = REDES_PLAN;
+    const redes = redesAProgramar(p, plan);
     const k = _clave(el.d);
     sugerencias.push({
       id: p.id, tipo: "promo", dia: el.d, base: el.base, horarios: horariosDeHueco(el.d, el.base, redes, plan),
@@ -984,7 +996,7 @@ function planificarTodo(posts, ahora = new Date(), plan = PLAN) {
       if (!el) { avisos.push({ id: p.id, tipo: "sin_hueco", texto: "No encontré hueco en los próximos 90 días." }); continue; }
       const k = _clave(el.d);
       sugerencias.push({
-        id: p.id, tipo, dia: el.d, base: el.base, horarios: horariosDeHueco(el.d, el.base, redesDePost(p), plan),
+        id: p.id, tipo, dia: el.d, base: el.base, horarios: horariosDeHueco(el.d, el.base, redesAProgramar(p, plan), plan),
         excede: false, vigencia: null,
         motivo: tipo === "tip" ? "Primer día sin otro tip." : "Primer día sin otro video.",
       });
@@ -1002,7 +1014,9 @@ function metasSemana(posts, ref = new Date(), plan = PLAN) {
   const domingo = _finDia(_masDias(lunes, 6));
   const n = { promo: 0, tip: 0, video: 0 };
   posts.forEach(p => {
-    const f = _aFecha(p.fechaProgramada);
+    // Fecha que cuenta: la programada o, si se publicó directo sin programarla, el día en que se
+    // marcó como publicada (si no, un tip publicado hoy sin fecha no sumaba a la meta de la semana).
+    const f = _aFecha(p.fechaProgramada) || (p.estado === "publicada" ? _aFecha(p.actualizadoEn) : null);
     if (f && f >= lunes && f <= domingo) n[tipoDe(p)]++;
   });
   return {
@@ -1652,7 +1666,7 @@ function tarjetaHtml(post, color) {
         <span>${escapeHtml(hora)}</span>
       </div>
       ${atrasada ? '<div class="etiqueta-atrasada-mini">⚠ Atrasada</div>' : ""}
-      ${sugerenciaDe(post) ? '<div class="etiqueta-sugerida">📅 Fecha sugerida — acéptala en «Sugerencias»</div>' : ""}
+      ${sugerenciaDe(post) ? `<div class="etiqueta-sugerida">📅 Sugerida: ${Object.keys(sugerenciaDe(post).horarios).map(r => NOMBRE_RED[r] + " " + _horaCorta(sugerenciaDe(post).horarios[r])).join(" · ")}</div>` : ""}
     </div>`;
 }
 
@@ -1689,6 +1703,19 @@ function abrirModal(postId) {
   document.getElementById("vigencia-nota").textContent =
     vig && vig.detectada ? "Detectada en el texto: cámbiala o bórrala si no es correcta." : "";
   renderBloquesRedes(post);
+  // Publicación sin fecha: se precargan los horarios SUGERIDOS (fecha, hora y cada red) y se
+  // marcan Instagram, Facebook y TikTok; se guardan al pulsar Guardar (o «Aceptar» en Sugerencias).
+  const sug = sugerenciaDe(post);
+  const notaSug = document.getElementById("nota-sugerencia");
+  notaSug.hidden = !sug;
+  if (sug) {
+    const primera = new Date(Math.min(...Object.values(sug.horarios).map(d => d.getTime())));
+    document.getElementById("campo-fecha").value = fechaLocalISO(primera);
+    document.getElementById("campo-hora").value = _horaCorta(primera);
+    Object.entries(sug.horarios).forEach(([r, d]) => { document.getElementById("hr-" + r).value = valorDateTimeLocal(d); });
+    renderChipsPlataformas([...new Set([...(post.plataformas || []), ...Object.keys(sug.horarios).map(r => NOMBRE_RED[r])])]);
+    notaSug.textContent = "Fecha y horarios sugeridos: se aplican al guardar (o con «Aceptar» en Sugerencias). Puedes cambiarlos.";
+  }
   const hist = historiaDe(post);
   const filaHistoria = document.getElementById("fila-historia");
   filaHistoria.hidden = !hist;
@@ -1701,6 +1728,11 @@ function abrirModal(postId) {
     const d = post.fechaProgramada.toDate();
     document.getElementById("campo-fecha").value = fechaLocalISO(d);
     document.getElementById("campo-hora").value = d.toTimeString().slice(0, 5);
+  } else if (sug) {
+    // sin fecha todavía: se precarga la sugerida (la primera publicación del día)
+    const primera = new Date(Math.min(...Object.values(sug.horarios).map(d => d.getTime())));
+    document.getElementById("campo-fecha").value = fechaLocalISO(primera);
+    document.getElementById("campo-hora").value = _horaCorta(primera);
   } else {
     document.getElementById("campo-fecha").value = "";
     document.getElementById("campo-hora").value = "";
