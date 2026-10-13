@@ -479,6 +479,57 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
   .modal-caja { padding: 20px 16px; }
 }
 
+/* ---------- Metas de la semana ---------- */
+.metas {
+  display: flex; flex-wrap: wrap; gap: 6px 14px;
+  padding: 6px 20px 0;
+  font-size: 13px; font-weight: 700; color: var(--ink-muted);
+}
+.meta-item { display: inline-flex; align-items: center; gap: 4px; }
+.meta-item.falta { color: var(--danger-text); }
+.meta-item.ok { color: var(--ok-text); }
+
+/* ---------- Botón y panel de sugerencias ---------- */
+#btn-sugerencias.con-sugerencias { background: var(--accion); color: var(--accion-fg); }
+.contador-sug {
+  display: inline-block; min-width: 20px; margin-left: 6px; padding: 0 6px;
+  border-radius: 999px; background: var(--accion-fg); color: var(--accion);
+  font-size: 12px; font-weight: 800; text-align: center;
+}
+.modal-ancha { max-width: 720px; }
+.lista-sugerencias { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+.sug-fila {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border-radius: 12px; padding: 10px 12px;
+  border-left: 6px solid var(--e-bg, var(--line));
+}
+.sug-info { flex: 1; min-width: 0; }
+.sug-info strong { overflow-wrap: anywhere; }
+.sug-tipo { font-size: 12px; font-weight: 800; color: var(--ink-muted); margin-left: 6px; }
+.sug-cuando { font-weight: 800; margin-top: 2px; text-transform: capitalize; }
+.sug-horas { font-size: 13px; color: var(--ink-muted); }
+.sug-motivo { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+.sug-motivo.excede { color: var(--danger-text); font-weight: 700; }
+.sug-aviso { font-size: 13px; font-weight: 700; color: var(--danger-text); padding: 8px 12px; background: var(--card); border-radius: 10px; }
+.sug-vacio { color: var(--ink-muted); text-align: center; padding: 16px 0; }
+
+/* ---------- Texto y horario por red (modal de publicación) ---------- */
+.redes-textos { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px 12px; margin: 0; }
+.redes-textos legend { font-size: 13px; font-weight: 800; padding: 0 6px; }
+.red-bloque { margin-top: 8px; }
+.red-cab { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.red-nombre { font-weight: 800; font-size: 14px; flex: 1; min-width: 90px; }
+.red-hora { width: auto; max-width: 100%; }
+.btn-copiar { background: var(--accion); color: var(--accion-fg); font-size: 13px; padding: 4px 12px; min-height: 36px; }
+.copy-completo summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--ink-muted); }
+.copy-completo textarea { margin-top: 6px; }
+
+@media (max-width: 720px) {
+  .txt-sug { display: none; }
+  .metas { padding: 6px 16px 0; }
+  .sug-fila { flex-direction: column; align-items: stretch; }
+}
+
 /* El atributo hidden debe ganar siempre: .modal-fondo y .app definen display y lo anulaban */
 [hidden] { display: none !important; }
 .form-msg { grid-column: span 2; margin: 0; font-size: 13px; font-weight: 700; }
@@ -534,6 +585,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
       </div>
 
       <div class="usuario">
+        <button id="btn-sugerencias" title="Sugerencias de programación" aria-label="Sugerencias de programación"><span aria-hidden="true">📅</span><span class="txt-sug"> Sugerencias</span><span id="sug-contador" class="contador-sug" hidden></span></button>
         <button id="btn-recargar" title="Recargar datos" aria-label="Recargar datos"><span aria-hidden="true">⟳</span><span class="txt-recargar"> Recargar</span></button>
         <span id="usuario-nombre"></span>
         <button id="btn-usuarios" hidden>Usuarios</button>
@@ -542,6 +594,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
     </header>
 
     <div id="leyenda" class="leyenda" aria-label="Etapas del embudo"></div>
+    <div id="metas" class="metas" aria-label="Metas de la semana"></div>
     <p id="carga-error" class="error-msg" role="alert" hidden></p>
     <main id="contenedor-vista" class="contenedor-vista"></main>
 
@@ -566,6 +619,19 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
           <input type="text" id="campo-fuente" />
         </label>
         <label class="fila-2">
+          <span>Tipo
+            <select id="campo-tipo">
+              <option value="promo">Promoción (flyer)</option>
+              <option value="tip">Tip</option>
+              <option value="video">Video</option>
+            </select>
+          </span>
+          <span>Vigencia (fecha límite)
+            <input type="date" id="campo-vigencia" />
+            <small id="vigencia-nota" class="hint"></small>
+          </span>
+        </label>
+        <label class="fila-2">
           <span>Fecha programada
             <input type="date" id="campo-fecha" />
           </span>
@@ -573,9 +639,14 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
             <input type="time" id="campo-hora" />
           </span>
         </label>
-        <label>Copy
-          <textarea id="campo-copy" rows="4"></textarea>
-        </label>
+        <fieldset class="redes-textos">
+          <legend>Texto y horario por red</legend>
+          <div id="bloques-redes"></div>
+        </fieldset>
+        <details class="copy-completo">
+          <summary>Copy completo (todas las secciones juntas)</summary>
+          <textarea id="campo-copy" rows="6" aria-label="Copy completo"></textarea>
+        </details>
         <label>Notas internas
           <textarea id="campo-notas" rows="2"></textarea>
         </label>
@@ -597,6 +668,21 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
         <button id="btn-guardar" class="btn-primario">Guardar</button>
       </div>
       <p id="guardar-msg" class="guardar-msg" role="status" hidden></p>
+    </div>
+  </div>
+
+  <!-- ---------- Sugerencias de programación ---------- -->
+  <div id="modal-sugerencias" class="modal-fondo" hidden>
+    <div class="modal-caja modal-ancha" role="dialog" aria-modal="true" aria-label="Sugerencias de programación">
+      <button class="modal-cerrar" id="sugerencias-cerrar" aria-label="Cerrar"><span aria-hidden="true">✕</span></button>
+      <h2>Sugerencias de programación</h2>
+      <p class="hint">Reglas: 2 flyers de promoción por día (los que tienen vigencia pueden pasar de 2), sin domingos,
+        entre 2:00 y 8:00 pm con horarios que rotan. Tips y videos van aparte. Al aceptar, la publicación pasa a «Programada».</p>
+      <div id="lista-sugerencias" class="lista-sugerencias"></div>
+      <div class="modal-acciones">
+        <span id="sug-msg" class="guardar-msg" role="status" hidden></span>
+        <button id="sug-aceptar-todas" class="btn-primario">Aceptar todas</button>
+      </div>
     </div>
   </div>
 
@@ -624,6 +710,270 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
     </div>
   </div>
 
+  <script>
+// ============================================================================
+// Planificador de publicaciones — funciones PURAS (sin DOM ni Firebase), para poder
+// probar cada regla por separado. Se carga como script clásico antes de app.js (y
+// build.py lo inserta en el HTML único), así que sus funciones son globales.
+//
+// Reglas (definidas por Malthus, oct 2026):
+//  - Solo se publica entre las 14:00 y las 20:00. Los horarios NO son fijos: rotan
+//    de un día a otro entre varias horas dentro de esa ventana.
+//  - Máximo 2 flyers de PROMOCIÓN por día; los domingos no se publica.
+//  - Un flyer con VIGENCIA (fecha límite) sí puede pasar de 2 en un día, para no
+//    mover todo el calendario y aun así publicarlo a tiempo.
+//  - Tips y videos se toman por separado (no cuentan para el límite de 2) y tienen
+//    metas por semana: mínimo 2 tips y 3-4 videos.
+//  - Cada flyer sale en TODAS las redes; cada red lleva su horario (escalonado).
+// ============================================================================
+
+const PLAN = {
+  ventana: { inicio: 14 * 60, fin: 20 * 60 },        // minutos desde las 00:00
+  promosPorDia: 2,
+  diasSinPublicar: [0],                               // 0 = domingo
+  // Cada fila = horas base de los huecos de UN día; se elige la fila por número de día,
+  // así la hora cambia todos los días. Mayor base + mayor desfase <= 20:00.
+  rotacion: [
+    [14 * 60 + 30, 18 * 60 + 30, 16 * 60 + 30],
+    [15 * 60,      19 * 60,      17 * 60],
+    [14 * 60,      18 * 60,      16 * 60],
+    [15 * 60 + 30, 19 * 60 + 15, 17 * 60 + 15],
+    [14 * 60 + 45, 18 * 60 + 45, 16 * 60 + 45],
+  ],
+  // Horas base para tips y videos (rotan igual), entre los huecos de las promociones.
+  rotacionExtra: [16 * 60, 17 * 60, 16 * 60 + 30, 17 * 60 + 30, 15 * 60 + 30, 18 * 60],
+  desfaseRedes: { instagram: 0, facebook: 15, whatsapp: 30, tiktok: 45 },   // minutos
+  separacionMin: 45,        // dos publicaciones del mismo día no se encimen
+  anticipacionMin: 30,      // para "hoy": el hueco debe quedar al menos 30 min adelante
+  horizonteDias: 90,
+  metas: { tip: { min: 2 }, video: { min: 3, max: 4 } },
+};
+const REDES_PLAN = ["instagram", "facebook", "tiktok", "whatsapp"];
+const NOMBRE_RED = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", whatsapp: "WhatsApp" };
+const RED_DE_PLATAFORMA = { Instagram: "instagram", Facebook: "facebook", TikTok: "tiktok", WhatsApp: "whatsapp", Reels: "instagram" };
+
+// ---------------------------------------------------------------- utilidades
+function _inicioDia(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+function _finDia(d) { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; }
+function _masDias(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function _clave(d) { return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+function _numDia(d) { return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000); }
+function _enMinutos(dia, min) { const x = _inicioDia(dia); x.setMinutes(min); return x; }
+function _aFecha(v) {
+  if (!v) return null;
+  if (typeof v.toDate === "function") return v.toDate();
+  if (v instanceof Date) return v;
+  const d = new Date(v);
+  return isNaN(d) ? null : d;
+}
+function _minutosDelDia(d) { return d.getHours() * 60 + d.getMinutes(); }
+
+function tipoDe(post) { return post.tipo === "tip" || post.tipo === "video" ? post.tipo : "promo"; }
+
+function redesDePost(post) {
+  const r = [...new Set((post.plataformas || []).map(p => RED_DE_PLATAFORMA[p]).filter(Boolean))];
+  return r.length ? r : ["instagram", "facebook", "tiktok"];
+}
+
+function horariosDeHueco(dia, baseMin, redes, plan = PLAN) {
+  const out = {};
+  redes.forEach(r => { out[r] = _enMinutos(dia, baseMin + (plan.desfaseRedes[r] || 0)); });
+  return out;
+}
+
+// --------------------------------------------------------------- vigencia
+const _MESES = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, set: 8, oct: 9, nov: 10, dic: 11 };
+
+// Fecha límite que dice el texto ("reserva hasta el 15 de octubre de 2026", "antes del 30 de
+// sep"). Solo frases de límite: "Viaje del 1 de octubre al 30 de noviembre" son fechas de viaje
+// y no cuentan. Devuelve el fin de ese día, o null.
+function detectarVigencia(texto, ahora = new Date()) {
+  if (!texto) return null;
+  const re = /(?:hasta(?:\s+el)?|antes\s+del?|v[aá]lid[oa]\s+hasta(?:\s+el)?)\s+(?:el\s+)?(\d{1,2})\s+de\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|set|oct|nov|dic)[a-záéíóú]*\.?(?:\s+(?:de\s+)?(\d{4}))?/gi;
+  const hoy = _inicioDia(ahora);
+  const fechas = [];
+  let m;
+  while ((m = re.exec(texto)) !== null) {
+    const dia = parseInt(m[1], 10), mes = _MESES[m[2].toLowerCase()];
+    if (dia < 1 || dia > 31) continue;
+    let anio = m[3] ? parseInt(m[3], 10) : hoy.getFullYear();
+    let f = new Date(anio, mes, dia);
+    if (!m[3] && f < _masDias(hoy, -45)) f = new Date(anio + 1, mes, dia);
+    if (f.getMonth() !== mes) continue;           // 31 de febrero, etc.
+    fechas.push(_finDia(f));
+  }
+  if (!fechas.length) return null;
+  const futuras = fechas.filter(f => f >= hoy);
+  return futuras.length ? new Date(Math.min(...futuras)) : new Date(Math.max(...fechas));
+}
+
+// {fecha, detectada} o null. La vigencia que puso una persona manda; si la persona decidió
+// "sin vigencia" (vigenciaManual) no se vuelve a detectar del texto.
+function vigenciaDe(post, ahora = new Date()) {
+  const manual = _aFecha(post.vigencia);
+  if (manual) return { fecha: _finDia(manual), detectada: false };
+  if (post.vigenciaManual === true) return null;
+  const d = detectarVigencia(post.copy, ahora);
+  return d ? { fecha: d, detectada: true } : null;
+}
+
+// -------------------------------------------------------- partir el texto
+// El copy que manda MiRebranda trae 4 secciones en un solo texto. Devuelve cada una limpia.
+function seccionesDeCopy(copy) {
+  const out = { post: "", guion: "", whatsapp: "", datos: "" };
+  if (!copy) return out;
+  const limpio = s => s.replace(/\*\*/g, "").replace(/^\s*(---|\*\*\*|___)\s*$/gm, "").trim();
+  const re = /^[\s#*]*(?:\d+\.\s*)?\[([A-ZÁÉÍÓÚÑ][^\]\n]*)\][^\n]*$/gim;
+  const marcas = [];
+  let m;
+  while ((m = re.exec(copy)) !== null) marcas.push({ nombre: m[1].toUpperCase(), ini: m.index, fin: m.index + m[0].length });
+  if (!marcas.length) { out.post = limpio(copy); return out; }
+  marcas.forEach((mk, i) => {
+    const texto = limpio(copy.slice(mk.fin, i + 1 < marcas.length ? marcas[i + 1].ini : copy.length));
+    if (mk.nombre.startsWith("POST")) out.post = texto;
+    else if (mk.nombre.startsWith("GUION")) out.guion = texto;
+    else if (mk.nombre.startsWith("MENSAJE")) out.whatsapp = texto;
+    else if (mk.nombre.startsWith("DATOS")) out.datos = texto;
+  });
+  return out;
+}
+
+// Texto inicial por red, a partir del copy (Instagram y Facebook comparten el post).
+function textosPorRed(copy) {
+  const s = seccionesDeCopy(copy);
+  return { instagram: s.post, facebook: s.post, tiktok: s.guion, whatsapp: s.whatsapp };
+}
+
+// ------------------------------------------------------------ planificador
+function _elegirBase(dia, usadas, indicePreferido, ahora, plan, fila) {
+  const esHoy = _clave(dia) === _clave(ahora);
+  for (let k = 0; k < fila.length; k++) {
+    const base = fila[(indicePreferido + k) % fila.length];
+    if (usadas.some(u => Math.abs(u - base) < plan.separacionMin)) continue;
+    if (esHoy && _enMinutos(dia, base) <= new Date(ahora.getTime() + plan.anticipacionMin * 60000)) continue;
+    return base;
+  }
+  return null;
+}
+
+// Devuelve { sugerencias: [...], avisos: [...] } para las publicaciones SIN fecha.
+// `posts` son los documentos con `id`; `ahora` se recibe para poder probar con fechas fijas.
+function planificarTodo(posts, ahora = new Date(), plan = PLAN) {
+  const hoy = _inicioDia(ahora);
+  const horizonte = _masDias(hoy, plan.horizonteDias);
+  const cuenta = {};   // día -> promociones ya puestas (para el límite de 2)
+  const horas = {};    // día -> minutos ocupados por cualquier publicación (para no encimar)
+  const cuentaTipo = { tip: {}, video: {} };
+
+  posts.forEach(p => {
+    const f = _aFecha(p.fechaProgramada);
+    if (!f) return;
+    const k = _clave(f), t = tipoDe(p);
+    (horas[k] = horas[k] || []).push(_minutosDelDia(f));
+    if (t === "promo") cuenta[k] = (cuenta[k] || 0) + 1;
+    else cuentaTipo[t][k] = (cuentaTipo[t][k] || 0) + 1;
+  });
+
+  const pendientes = tipo => posts.filter(p => tipoDe(p) === tipo && !_aFecha(p.fechaProgramada) &&
+    (p.estado === "por_disenar" || p.estado === "revisada"));
+  const creado = p => (_aFecha(p.creadoEn) || new Date(0)).getTime();
+  const sugerencias = [], avisos = [];
+
+  // ---- Promociones: primero las que tienen vigencia (la que vence antes va primero)
+  const promos = pendientes("promo").map(p => ({ p, vig: vigenciaDe(p, ahora) }));
+  promos.sort((a, b) => {
+    if (a.vig && b.vig) return a.vig.fecha - b.vig.fecha;
+    if (a.vig) return -1;
+    if (b.vig) return 1;
+    return creado(a.p) - creado(b.p);
+  });
+  for (const { p, vig } of promos) {
+    if (vig && vig.fecha < hoy) {
+      avisos.push({ id: p.id, tipo: "vencida", texto: `Su vigencia ${vig.detectada ? "(detectada en el texto) " : ""}ya pasó: ${_fechaCorta(vig.fecha)}. Revísala o quita la vigencia para programarla.` });
+      continue;
+    }
+    const limite = vig && vig.fecha < horizonte ? vig.fecha : horizonte;
+    const opciones = [];
+    for (let d = hoy; d <= limite; d = _masDias(d, 1)) {
+      if (plan.diasSinPublicar.includes(d.getDay())) continue;
+      const k = _clave(d), n = cuenta[k] || 0;
+      const base = _elegirBase(d, horas[k] || [], n, ahora, plan, plan.rotacion[_numDia(d) % plan.rotacion.length]);
+      if (base != null) opciones.push({ d, n, base });
+    }
+    let el = opciones.find(o => o.n < plan.promosPorDia), excede = false;
+    if (!el && vig && opciones.length) {      // solo la vigencia puede pasar del límite
+      el = opciones.reduce((m, o) => (o.n < m.n ? o : m));
+      excede = true;
+    }
+    if (!el) {
+      avisos.push({ id: p.id, tipo: "sin_hueco", texto: vig ? "No hay ningún día disponible antes de su vigencia." : "No encontré hueco en los próximos 90 días." });
+      continue;
+    }
+    const redes = REDES_PLAN;
+    const k = _clave(el.d);
+    sugerencias.push({
+      id: p.id, tipo: "promo", dia: el.d, base: el.base, horarios: horariosDeHueco(el.d, el.base, redes, plan),
+      excede, vigencia: vig,
+      motivo: excede ? `Vence el ${_fechaCorta(vig.fecha)}: se agrega aunque ese día ya tiene ${el.n}.`
+        : vig ? `Vence el ${_fechaCorta(vig.fecha)}: primer día con lugar.` : "Primer día con lugar.",
+    });
+    cuenta[k] = (cuenta[k] || 0) + 1;
+    (horas[k] = horas[k] || []).push(el.base);
+  }
+
+  // ---- Tips y videos: aparte, un día sin otro de su tipo (y, si se puede, no pegado a otro)
+  for (const tipo of ["tip", "video"]) {
+    const lista = pendientes(tipo).sort((a, b) => creado(a) - creado(b));
+    for (const p of lista) {
+      const ocupado = d => cuentaTipo[tipo][_clave(d)] || 0;
+      const vecino = d => ocupado(_masDias(d, -1)) || ocupado(_masDias(d, 1));
+      const candidatos = [];
+      for (let d = hoy; d <= horizonte; d = _masDias(d, 1)) {
+        if (plan.diasSinPublicar.includes(d.getDay()) || ocupado(d)) continue;
+        const k = _clave(d), usadas = horas[k] || [];
+        const filaExtra = plan.rotacionExtra.map((_, i) => plan.rotacionExtra[(_numDia(d) + i) % plan.rotacionExtra.length]);
+        const base = _elegirBase(d, usadas, 0, ahora, plan, filaExtra);
+        if (base != null) candidatos.push({ d, base, pegado: !!vecino(d) });
+        if (candidatos.filter(c => !c.pegado).length) break;
+      }
+      const el = candidatos.find(c => !c.pegado) || candidatos[0];
+      if (!el) { avisos.push({ id: p.id, tipo: "sin_hueco", texto: "No encontré hueco en los próximos 90 días." }); continue; }
+      const k = _clave(el.d);
+      sugerencias.push({
+        id: p.id, tipo, dia: el.d, base: el.base, horarios: horariosDeHueco(el.d, el.base, redesDePost(p), plan),
+        excede: false, vigencia: null,
+        motivo: tipo === "tip" ? "Primer día sin otro tip." : "Primer día sin otro video.",
+      });
+      cuentaTipo[tipo][k] = 1;
+      (horas[k] = horas[k] || []).push(el.base);
+    }
+  }
+  return { sugerencias, avisos };
+}
+
+// Metas de la semana (lunes a sábado) de la fecha `ref`: cuántos tips y videos hay con fecha.
+function metasSemana(posts, ref = new Date(), plan = PLAN) {
+  const d = _inicioDia(ref);
+  const lunes = _masDias(d, d.getDay() === 0 ? -6 : 1 - d.getDay());
+  const domingo = _finDia(_masDias(lunes, 6));
+  const n = { promo: 0, tip: 0, video: 0 };
+  posts.forEach(p => {
+    const f = _aFecha(p.fechaProgramada);
+    if (f && f >= lunes && f <= domingo) n[tipoDe(p)]++;
+  });
+  return {
+    lunes, promos: n.promo,
+    tip: { n: n.tip, min: plan.metas.tip.min, ok: n.tip >= plan.metas.tip.min },
+    video: { n: n.video, min: plan.metas.video.min, max: plan.metas.video.max, ok: n.video >= plan.metas.video.min },
+  };
+}
+
+const _DIAS_CORTOS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+const _MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+function _fechaCorta(d) { return `${_DIAS_CORTOS[d.getDay()]} ${d.getDate()} ${_MESES_CORTOS[d.getMonth()]}`; }
+function _horaCorta(d) { return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+
+</script>
   <script type="module">
 // ============================================================================
 // Control de Publicaciones — Cherry Travels
@@ -951,6 +1301,8 @@ function render() {
     b.setAttribute("aria-pressed", String(activa));
   });
   renderLeyenda();
+  renderMetas();
+  actualizarBotonSugerencias();
 
   if (estadoApp.vista === "mes") { renderEtiquetaFecha(); renderMes(); }
   else if (estadoApp.vista === "semana") { renderEtiquetaFecha(); renderSemana(); }
@@ -1171,6 +1523,14 @@ function abrirModal(postId) {
   renderChipsPlataformas(post.plataformas || []);
   document.getElementById("campo-fuente").value = post.fuente || "";
   document.getElementById("campo-copy").value = post.copy || "";
+  document.getElementById("campo-tipo").value = tipoDe(post);
+  const vig = vigenciaDe(post, new Date());
+  const campoVigencia = document.getElementById("campo-vigencia");
+  campoVigencia.value = vig ? fechaLocalISO(vig.fecha) : "";
+  campoVigencia.dataset.original = campoVigencia.value;   // para saber si la persona la cambió
+  document.getElementById("vigencia-nota").textContent =
+    vig && vig.detectada ? "Detectada en el texto: cámbiala o bórrala si no es correcta." : "";
+  renderBloquesRedes(post);
   document.getElementById("campo-notas").value = post.notas || "";
   document.getElementById("campo-destacado").checked = !!post.destacado;
 
@@ -1248,8 +1608,24 @@ document.getElementById("btn-guardar").addEventListener("click", async () => {
     fechaProgramada = Timestamp.fromDate(d);
   }
 
+  // Texto y horario de cada red. Si no hay fecha principal pero sí horarios por red, la
+  // publicación se coloca en el día del primero.
+  const textos = {}, horarios = {};
+  REDES_PLAN.forEach(r => {
+    textos[r] = document.getElementById("tx-" + r).value;
+    const v = document.getElementById("hr-" + r).value;
+    const d = v ? new Date(v) : null;
+    if (d && !isNaN(d)) horarios[r] = Timestamp.fromDate(d);
+  });
+  if (!fechaProgramada && Object.keys(horarios).length) {
+    fechaProgramada = Timestamp.fromDate(new Date(Math.min(...Object.values(horarios).map(t => t.toDate().getTime()))));
+  }
+
   const cambios = {
     titulo: document.getElementById("campo-titulo").value.trim(),
+    tipo: document.getElementById("campo-tipo").value,
+    textos,
+    horarios,
     plataformas: leerPlataformasSeleccionadas(),
     fuente: document.getElementById("campo-fuente").value.trim(),
     copy: document.getElementById("campo-copy").value,
@@ -1259,6 +1635,18 @@ document.getElementById("btn-guardar").addEventListener("click", async () => {
     actualizadoEn: serverTimestamp(),
     ultimoEditor: estadoApp.usuarioUid,
   };
+  // Vigencia: solo se guarda si la persona la cambió (así una detectada del texto no se
+  // vuelve "manual" por guardar otra cosa). Si la borra, queda "sin vigencia" a propósito.
+  const campoVigencia = document.getElementById("campo-vigencia");
+  if (campoVigencia.value !== campoVigencia.dataset.original) {
+    if (campoVigencia.value) {
+      const [va, vm, vd] = campoVigencia.value.split("-").map(Number);
+      cambios.vigencia = Timestamp.fromDate(new Date(va, vm - 1, vd, 23, 59, 0, 0));
+    } else {
+      cambios.vigencia = null;
+    }
+    cambios.vigenciaManual = true;
+  }
 
   const msg = document.getElementById("guardar-msg");
   try {
@@ -1426,6 +1814,172 @@ document.getElementById("form-nuevo-usuario").addEventListener("submit", async (
 });
 
 // ============================================================================
+// TEXTO Y HORARIO POR RED (modal de publicación)
+// ============================================================================
+function valorDateTimeLocal(ts) {
+  const d = _aFecha(ts);
+  if (!d) return "";
+  return fechaLocalISO(d) + "T" + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+}
+
+// Un cuadro por red con su horario y su botón Copiar. El texto sale de `post.textos` (lo que se
+// editó aquí) o, si no hay, de las secciones del copy que manda MiRebranda.
+function renderBloquesRedes(post) {
+  const guardados = post.textos || {};
+  const base = textosPorRed(post.copy || "");
+  const horarios = post.horarios || {};
+  const cont = document.getElementById("bloques-redes");
+  cont.innerHTML = REDES_PLAN.map(r => `
+    <div class="red-bloque">
+      <div class="red-cab">
+        <label class="red-nombre" for="hr-${r}">${NOMBRE_RED[r]}</label>
+        <input type="datetime-local" id="hr-${r}" class="red-hora" aria-label="Horario en ${NOMBRE_RED[r]}" />
+        <button type="button" class="btn-copiar" data-red="${r}" aria-label="Copiar el texto de ${NOMBRE_RED[r]}">Copiar</button>
+      </div>
+      <textarea id="tx-${r}" rows="5" aria-label="Texto para ${NOMBRE_RED[r]}"></textarea>
+    </div>`).join("");
+  REDES_PLAN.forEach(r => {
+    document.getElementById("tx-" + r).value = guardados[r] !== undefined ? guardados[r] : (base[r] || "");
+    document.getElementById("hr-" + r).value = valorDateTimeLocal(horarios[r]);
+  });
+  cont.querySelectorAll(".btn-copiar").forEach(btn => btn.addEventListener("click", () => copiarTextoDeRed(btn)));
+}
+
+async function copiarTextoDeRed(btn) {
+  const campo = document.getElementById("tx-" + btn.dataset.red);
+  let copiado = false;
+  try {
+    await navigator.clipboard.writeText(campo.value);
+    copiado = true;
+  } catch (err) {
+    campo.select();
+    try { copiado = document.execCommand("copy"); } catch (e) { copiado = false; }
+  }
+  const original = btn.textContent;
+  btn.textContent = copiado ? "¡Copiado!" : "Selecciona y copia";
+  setTimeout(() => { btn.textContent = original; }, 1600);
+}
+
+// ============================================================================
+// METAS DE LA SEMANA Y SUGERENCIAS DE PROGRAMACIÓN
+// ============================================================================
+const modalSugerencias = document.getElementById("modal-sugerencias");
+const ETIQUETA_TIPO = { promo: "Promoción", tip: "Tip", video: "Video" };
+
+function renderMetas() {
+  const el = document.getElementById("metas");
+  if (!el) return;
+  const m = metasSemana(estadoApp.posts, estadoApp.fechaAncla);
+  const finSemana = _masDias(m.lunes, 5);
+  const importa = _inicioDia(new Date()) <= _finDia(_masDias(m.lunes, 6));   // las metas pesan de esta semana en adelante
+  const marca = ok => (!importa ? "" : ok ? "✓ " : "⚠ ");
+  const clase = ok => "meta-item " + (!importa ? "" : ok ? "ok" : "falta");
+  el.innerHTML =
+    `<span class="meta-item">Semana ${_fechaCorta(m.lunes)} – ${_fechaCorta(finSemana)}</span>` +
+    `<span class="meta-item">Promociones ${m.promos}</span>` +
+    `<span class="${clase(m.tip.ok)}">${marca(m.tip.ok)}Tips ${m.tip.n}/${m.tip.min}</span>` +
+    `<span class="${clase(m.video.ok)}">${marca(m.video.ok)}Videos ${m.video.n}/${m.video.min}–${m.video.max}</span>`;
+}
+
+function calcularSugerencias() {
+  return planificarTodo(estadoApp.posts, new Date());
+}
+
+function actualizarBotonSugerencias() {
+  const btn = document.getElementById("btn-sugerencias");
+  const contador = document.getElementById("sug-contador");
+  if (!btn || !contador) return;
+  const n = calcularSugerencias().sugerencias.length;
+  contador.textContent = String(n);
+  contador.hidden = n === 0;
+  btn.classList.toggle("con-sugerencias", n > 0);
+  btn.setAttribute("aria-label", n ? `Sugerencias de programación: ${n} pendientes` : "Sugerencias de programación");
+}
+
+function renderSugerencias() {
+  const { sugerencias, avisos } = calcularSugerencias();
+  const cont = document.getElementById("lista-sugerencias");
+  const titulo = id => { const p = estadoApp.posts.find(x => x.id === id); return (p && p.titulo) || "(sin título)"; };
+  const filas = sugerencias.map(s => `
+    <div class="sug-fila" data-id="${escapeHtml(s.id)}" style="--e-bg:var(--etapa-por_disenar)">
+      <div class="sug-info">
+        <strong>${escapeHtml(titulo(s.id))}</strong><span class="sug-tipo">${ETIQUETA_TIPO[s.tipo]}</span>
+        <div class="sug-cuando">${_fechaCorta(s.dia)}</div>
+        <div class="sug-horas">${Object.keys(s.horarios).map(r => `${NOMBRE_RED[r]} ${_horaCorta(s.horarios[r])}`).join(" · ")}</div>
+        <div class="sug-motivo ${s.excede ? "excede" : ""}">${escapeHtml(s.motivo)}</div>
+      </div>
+      <button class="btn-primario sug-aceptar" data-id="${escapeHtml(s.id)}">Aceptar</button>
+    </div>`).join("");
+  const alertas = avisos.map(a => `<div class="sug-aviso" role="alert">${escapeHtml(titulo(a.id))}: ${escapeHtml(a.texto)}</div>`).join("");
+  cont.innerHTML = (filas || '<p class="sug-vacio">No hay publicaciones por programar. Todo lo que está «Por diseñar» o «Revisada» ya tiene fecha.</p>') + alertas;
+  document.getElementById("sug-aceptar-todas").disabled = sugerencias.length === 0;
+  cont.querySelectorAll(".sug-aceptar").forEach(btn => btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    const s = sugerencias.find(x => x.id === btn.dataset.id);
+    await aceptarSugerencia(s);
+    renderSugerencias();
+    render();
+  }));
+}
+
+// Pone fecha y horarios de la sugerencia en la publicación y la pasa a «Programada».
+// Los textos por red se guardan si aún no existían (para que cada red tenga su cuadro).
+async function aceptarSugerencia(s) {
+  const post = estadoApp.posts.find(p => p.id === s.id);
+  const msg = document.getElementById("sug-msg");
+  if (!post) return false;
+  const horarios = {};
+  Object.entries(s.horarios).forEach(([r, d]) => { horarios[r] = Timestamp.fromDate(d); });
+  const nombres = Object.keys(s.horarios).map(r => NOMBRE_RED[r]);
+  const primera = new Date(Math.min(...Object.values(s.horarios).map(d => d.getTime())));
+  const cambios = {
+    fechaProgramada: Timestamp.fromDate(primera),
+    horarios,
+    plataformas: [...new Set([...(post.plataformas || []), ...nombres])],
+    tipo: s.tipo,
+    textos: post.textos || textosPorRed(post.copy || ""),
+    estado: "programada",
+    actualizadoEn: serverTimestamp(),
+    ultimoEditor: estadoApp.usuarioUid,
+  };
+  if (s.vigencia && s.vigencia.detectada) cambios.vigencia = Timestamp.fromDate(s.vigencia.fecha);
+  try {
+    await updateDoc(doc(db, "posts", post.id), cambios);
+  } catch (err) {
+    console.error("Error al aceptar la sugerencia:", err);
+    msg.textContent = mensajeErrorFirestore(err);
+    msg.hidden = false;
+    return false;
+  }
+  Object.assign(post, cambios, { actualizadoEn: Timestamp.now() });
+  msg.hidden = true;
+  return true;
+}
+
+document.getElementById("btn-sugerencias").addEventListener("click", () => {
+  document.getElementById("sug-msg").hidden = true;
+  renderSugerencias();
+  abrirDialogo(modalSugerencias, document.getElementById("sugerencias-cerrar"));
+});
+document.getElementById("sugerencias-cerrar").addEventListener("click", () => cerrarDialogo(modalSugerencias));
+document.getElementById("sug-aceptar-todas").addEventListener("click", async () => {
+  const boton = document.getElementById("sug-aceptar-todas");
+  const msg = document.getElementById("sug-msg");
+  const { sugerencias } = calcularSugerencias();
+  boton.disabled = true;
+  let hechas = 0;
+  for (const s of sugerencias) {
+    if (!(await aceptarSugerencia(s))) break;
+    hechas++;
+    msg.textContent = `Aceptadas ${hechas} de ${sugerencias.length}…`;
+    msg.hidden = false;
+  }
+  if (hechas === sugerencias.length) { msg.textContent = `Listo: ${hechas} programadas ✓`; msg.hidden = false; }
+  renderSugerencias();
+  render();
+});
+
+// ============================================================================
 // CERRAR MODALES: tecla Escape y clic en el fondo oscuro
 // ============================================================================
 let focoPrevio = null;
@@ -1443,13 +1997,13 @@ function cerrarDialogo(fondo) {
 }
 
 function cerrarModalesAbiertos() {
-  [modalUsuarios, modalPost].forEach(f => { if (!f.hidden) cerrarDialogo(f); });
+  [modalSugerencias, modalUsuarios, modalPost].forEach(f => { if (!f.hidden) cerrarDialogo(f); });
 }
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { cerrarModalesAbiertos(); return; }
   // Tab se queda dentro del diálogo abierto
   if (e.key === "Tab") {
-    const abierto = [modalUsuarios, modalPost].find(f => !f.hidden);
+    const abierto = [modalSugerencias, modalUsuarios, modalPost].find(f => !f.hidden);
     if (!abierto) return;
     const foc = Array.from(abierto.querySelectorAll("button, input, select, textarea, [tabindex]:not([tabindex='-1'])"))
       .filter(el => !el.disabled && !el.hidden && el.offsetParent !== null);
@@ -1460,7 +2014,7 @@ document.addEventListener("keydown", (e) => {
     else if (!abierto.contains(document.activeElement)) { e.preventDefault(); primero.focus(); }
   }
 });
-[modalPost, modalUsuarios].forEach(fondo => {
+[modalPost, modalUsuarios, modalSugerencias].forEach(fondo => {
   // solo si el clic fue en el fondo mismo, no dentro de la caja
   fondo.addEventListener("click", (e) => { if (e.target === fondo) cerrarDialogo(fondo); });
 });
