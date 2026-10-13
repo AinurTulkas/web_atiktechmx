@@ -530,6 +530,34 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
   .sug-fila { flex-direction: column; align-items: stretch; }
 }
 
+/* ---------- Agenda del día ---------- */
+.agenda { max-width: 860px; margin: 0 auto; }
+.agenda-titulo { margin: 0 0 4px; font-size: 24px; }
+.agenda-resumen { margin: 0 0 14px; font-weight: 700; color: var(--ink-muted); min-height: 1.3em; }
+.agenda-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.accion {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border-radius: 12px; padding: 10px 12px;
+  border-left: 6px solid var(--etapa-por_disenar);
+}
+.accion.hecha { opacity: 0.6; border-left-color: var(--etapa-programada); }
+.accion.vencida { box-shadow: 0 0 0 2px var(--color-atrasada); }
+.accion-check { width: 22px; height: 22px; flex: none; }
+.accion-hora { font-weight: 800; font-size: 18px; min-width: 56px; font-variant-numeric: tabular-nums; }
+.accion-info { flex: 1; min-width: 0; }
+.accion-tipo { font-size: 12px; font-weight: 800; color: var(--ink-muted); margin-left: 4px; }
+.accion-atraso { font-size: 12px; font-weight: 800; color: var(--danger-text); margin-left: 6px; }
+.accion-titulo { overflow-wrap: anywhere; }
+.accion-nota { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+.accion-botones { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.red-hecha { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; }
+.red-hecha input { width: auto; }
+@media (max-width: 720px) {
+  .accion { flex-wrap: wrap; }
+  .accion-info { flex-basis: calc(100% - 100px); }
+  .accion-botones { width: 100%; justify-content: flex-start; }
+}
+
 /* El atributo hidden debe ganar siempre: .modal-fondo y .app definen display y lo anulaban */
 [hidden] { display: none !important; }
 .form-msg { grid-column: span 2; margin: 0; font-size: 13px; font-weight: 700; }
@@ -575,6 +603,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
         <button class="vista-btn" data-vista="mes" aria-pressed="false">Mes</button>
         <button class="vista-btn" data-vista="semana" aria-pressed="false">Semana</button>
         <button class="vista-btn" data-vista="dia" aria-pressed="false">Día</button>
+        <button class="vista-btn" data-vista="agenda" aria-pressed="false">Agenda</button>
       </nav>
 
       <div class="navegacion-fecha">
@@ -605,6 +634,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
     <div class="modal-caja" role="dialog" aria-modal="true" aria-label="Detalle de la publicación">
       <button class="modal-cerrar" id="modal-cerrar" aria-label="Cerrar"><span aria-hidden="true">✕</span></button>
       <img id="modal-imagen" class="modal-imagen" alt="" />
+      <p id="modal-laminas" class="hint" hidden></p>
       <div class="modal-campos">
         <label>Título
           <input type="text" id="campo-titulo" />
@@ -653,6 +683,10 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
         <label class="fila-check">
           <input type="checkbox" id="campo-destacado" />
           Destacado
+        </label>
+        <label class="fila-check" id="fila-historia" hidden>
+          <input type="checkbox" id="campo-historia-hecha" />
+          <span id="historia-texto">Historia publicada</span>
         </label>
 
         <div class="etapa-actual">
@@ -745,6 +779,7 @@ const PLAN = {
   desfaseRedes: { instagram: 0, facebook: 15, whatsapp: 30, tiktok: 45 },   // minutos
   separacionMin: 45,        // dos publicaciones del mismo día no se encimen
   anticipacionMin: 30,      // para "hoy": el hueco debe quedar al menos 30 min adelante
+  historiaDespuesMin: 90,   // la historia (republicar el flyer) sale 90 min después de Instagram, sin pasar de las 20:00
   horizonteDias: 90,
   metas: { tip: { min: 2 }, video: { min: 3, max: 4 } },
 };
@@ -966,6 +1001,100 @@ function metasSemana(posts, ref = new Date(), plan = PLAN) {
     tip: { n: n.tip, min: plan.metas.tip.min, ok: n.tip >= plan.metas.tip.min },
     video: { n: n.video, min: plan.metas.video.min, max: plan.metas.video.max, ok: n.video >= plan.metas.video.min },
   };
+}
+
+
+// ------------------------------------------------------------- historias
+// Una historia por PROMOCIÓN: se republica el flyer el mismo día, un rato después del post de
+// Instagram y siempre dentro de la ventana (tope 20:00). Se calcula al vuelo, no se guarda.
+function historiaDe(post, plan = PLAN) {
+  if (tipoDe(post) !== "promo") return null;
+  const base = _aFecha(post.horarios && post.horarios.instagram) || _aFecha(post.fechaProgramada);
+  if (!base) return null;
+  const tope = _enMinutos(base, plan.ventana.fin);
+  let t = new Date(base.getTime() + plan.historiaDespuesMin * 60000);
+  if (t > tope) t = tope;
+  if (t <= base) t = new Date(base.getTime() + 15 * 60000);
+  return t;
+}
+
+// ---------------------------------------------------------- agenda del día
+// Lista cronológica de lo que hay que hacer un día: cada publicación en cada red + la historia
+// del flyer. `hecha` sale de post.hechas (por red) y post.historiaHecha.
+function accionesDelDia(posts, dia, ahora = new Date()) {
+  const k = _clave(dia), out = [];
+  posts.forEach(p => {
+    const fecha = _aFecha(p.fechaProgramada);
+    if (!fecha) return;
+    const hechas = p.hechas || {};
+    const horarios = p.horarios || {};
+    const redes = Object.keys(horarios).length ? REDES_PLAN.filter(r => horarios[r]) : redesDePost(p);
+    redes.forEach(r => {
+      const hora = _aFecha(horarios[r]) || fecha;
+      if (_clave(hora) !== k) return;
+      out.push({ postId: p.id, tipoPost: tipoDe(p), clase: "feed", red: r, hora, hecha: hechas[r] === true || p.estado === "publicada" });
+    });
+    const h = historiaDe(p);
+    if (h && _clave(h) === k) out.push({ postId: p.id, tipoPost: tipoDe(p), clase: "historia", red: "instagram", hora: h, hecha: p.historiaHecha === true });
+  });
+  out.sort((a, b) => a.hora - b.hora || (a.clase === "historia") - (b.clase === "historia") || REDES_PLAN.indexOf(a.red) - REDES_PLAN.indexOf(b.red));
+  out.forEach(a => { a.vencida = !a.hecha && new Date(a.hora.getTime() + 60 * 60000) < ahora; });
+  return out;
+}
+
+// Redes en las que debe publicarse un post (para saber cuándo está "publicada" del todo).
+function redesDeAgenda(post) {
+  const horarios = post.horarios || {};
+  return Object.keys(horarios).length ? REDES_PLAN.filter(r => horarios[r]) : redesDePost(post);
+}
+
+// ------------------------------------------------ guion de reel -> prompt
+// El guion que genera MiRebranda viene en escenas: "(0:00 - 0:03) Visual: ... Texto en pantalla: ...
+// Locución: ...". Se arma un prompt para pegar en un generador de video con IA. Sin IA ni llaves.
+function escenasDeGuion(guion) {
+  if (!guion) return [];
+  const limpio = guion.replace(/\*\*/g, "");
+  const re = /\(\s*(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})\s*\)/g;
+  const marcas = [];
+  let m;
+  while ((m = re.exec(limpio)) !== null) marcas.push({ ini: m[1], fin: m[2], desde: m.index, hasta: m.index + m[0].length });
+  // Parte el bloque de UNA escena por sus etiquetas (Visual / Texto en pantalla / Locución).
+  const camposDeEscena = txt => {
+    const out = { visual: "", texto: "", locucion: "" };
+    const etiquetas = [];
+    const re = /(Visual|Texto en pantalla|Locuci[oó]n)\s*:/gi;
+    let x;
+    while ((x = re.exec(txt)) !== null) etiquetas.push({ k: x[1].toLowerCase(), ini: x.index, desde: x.index + x[0].length });
+    etiquetas.forEach((e, i) => {
+      const valor = txt.slice(e.desde, i + 1 < etiquetas.length ? etiquetas[i + 1].ini : txt.length)
+        .replace(/\s+/g, " ").replace(/[\s*]+$/, "").trim();
+      if (e.k.startsWith("visual")) out.visual = valor;
+      else if (e.k.startsWith("texto")) out.texto = valor;
+      else out.locucion = valor;
+    });
+    return out;
+  };
+  return marcas.map((mk, i) => {
+    const txt = limpio.slice(mk.hasta, i + 1 < marcas.length ? marcas[i + 1].desde : limpio.length);
+    return { inicio: mk.ini, fin: mk.fin, ...camposDeEscena(txt) };
+  }).filter(e => e.visual || e.texto || e.locucion);
+}
+
+function promptDeVideo(guion) {
+  const esc = escenasDeGuion(guion);
+  if (!esc.length) return "";
+  const [dm, ds] = esc[esc.length - 1].fin.split(":").map(Number);
+  const segundos = dm * 60 + ds;
+  const sinPunto = t => t.replace(/\.$/, "");
+  const lineas = esc.map((e, i) => {
+    const partes = [`Escena ${i + 1} (${e.inicio}–${e.fin}):`];
+    if (e.visual) partes.push(e.visual.replace(/[.\s]+$/, "") + ".");
+    if (e.texto) partes.push(`Texto en pantalla: «${e.texto}».`);
+    if (e.locucion) partes.push(`Locución en español de México: «${sinPunto(e.locucion)}».`);
+    return partes.join(" ");
+  });
+  return `Video vertical 9:16 de ${segundos} segundos para Reels y TikTok, de viajes, ritmo dinámico y colores vivos.\n` +
+    lineas.join("\n") + "\nCierra con el logo de la agencia.";
 }
 
 const _DIAS_CORTOS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
@@ -1306,6 +1435,7 @@ function render() {
 
   if (estadoApp.vista === "mes") { renderEtiquetaFecha(); renderMes(); }
   else if (estadoApp.vista === "semana") { renderEtiquetaFecha(); renderSemana(); }
+  else if (estadoApp.vista === "agenda") { renderEtiquetaFecha(); renderAgenda(); }
   else { renderEtiquetaFecha(); renderDia(); }
 }
 
@@ -1495,7 +1625,7 @@ function tarjetaHtml(post, color) {
       ${imagenValida ? `<img src="${escapeHtml(post.imagenUrl)}" alt="" />` : ""}
       <div class="titulo">${escapeHtml(post.titulo || "(sin título)")}</div>
       <div class="meta">
-        <span>${escapeHtml(plataformasTexto)}</span>
+        <span>${escapeHtml(plataformasTexto)}${Number(post.laminas) > 1 ? " · Carrusel de " + Number(post.laminas) : ""}</span>
         <span>${escapeHtml(hora)}</span>
       </div>
       ${atrasada ? '<div class="etiqueta-atrasada-mini">⚠ Atrasada</div>' : ""}
@@ -1519,6 +1649,10 @@ function abrirModal(postId) {
   const imagenValidaModal = typeof post.imagenUrl === "string" && post.imagenUrl.startsWith(PREFIJO_IMAGEN_VALIDO);
   document.getElementById("modal-imagen").src = imagenValidaModal ? post.imagenUrl : "";
   document.getElementById("modal-imagen").hidden = !imagenValidaModal;
+  const laminas = Number(post.laminas) || 1;
+  const notaLaminas = document.getElementById("modal-laminas");
+  notaLaminas.hidden = laminas <= 1;
+  notaLaminas.textContent = laminas > 1 ? `Carrusel de ${laminas} imágenes: aquí se ve la portada; las demás están en la carpeta de MiRebranda.` : "";
   document.getElementById("campo-titulo").value = post.titulo || "";
   renderChipsPlataformas(post.plataformas || []);
   document.getElementById("campo-fuente").value = post.fuente || "";
@@ -1531,6 +1665,11 @@ function abrirModal(postId) {
   document.getElementById("vigencia-nota").textContent =
     vig && vig.detectada ? "Detectada en el texto: cámbiala o bórrala si no es correcta." : "";
   renderBloquesRedes(post);
+  const hist = historiaDe(post);
+  const filaHistoria = document.getElementById("fila-historia");
+  filaHistoria.hidden = !hist;
+  document.getElementById("campo-historia-hecha").checked = post.historiaHecha === true;
+  if (hist) document.getElementById("historia-texto").textContent = `Historia publicada (sugerida ${_fechaCorta(hist)} a las ${_horaCorta(hist)})`;
   document.getElementById("campo-notas").value = post.notas || "";
   document.getElementById("campo-destacado").checked = !!post.destacado;
 
@@ -1635,6 +1774,11 @@ document.getElementById("btn-guardar").addEventListener("click", async () => {
     actualizadoEn: serverTimestamp(),
     ultimoEditor: estadoApp.usuarioUid,
   };
+  const hechas = {};
+  REDES_PLAN.forEach(r => { hechas[r] = document.getElementById("hecha-" + r).checked; });
+  cambios.hechas = hechas;
+  if (!document.getElementById("fila-historia").hidden) cambios.historiaHecha = document.getElementById("campo-historia-hecha").checked;
+  Object.assign(cambios, avanceDeEstado(post, hechas, horarios, cambios.plataformas));
   // Vigencia: solo se guarda si la persona la cambió (así una detectada del texto no se
   // vuelve "manual" por guardar otra cosa). Si la borra, queda "sin vigencia" a propósito.
   const campoVigencia = document.getElementById("campo-vigencia");
@@ -1834,30 +1978,153 @@ function renderBloquesRedes(post) {
       <div class="red-cab">
         <label class="red-nombre" for="hr-${r}">${NOMBRE_RED[r]}</label>
         <input type="datetime-local" id="hr-${r}" class="red-hora" aria-label="Horario en ${NOMBRE_RED[r]}" />
+        <label class="red-hecha"><input type="checkbox" id="hecha-${r}" /> Publicado</label>
         <button type="button" class="btn-copiar" data-red="${r}" aria-label="Copiar el texto de ${NOMBRE_RED[r]}">Copiar</button>
+        ${r === "tiktok" ? '<button type="button" class="btn-copiar" id="btn-prompt-video" aria-label="Copiar prompt de video para IA">Prompt de video</button>' : ""}
       </div>
       <textarea id="tx-${r}" rows="5" aria-label="Texto para ${NOMBRE_RED[r]}"></textarea>
     </div>`).join("");
   REDES_PLAN.forEach(r => {
     document.getElementById("tx-" + r).value = guardados[r] !== undefined ? guardados[r] : (base[r] || "");
     document.getElementById("hr-" + r).value = valorDateTimeLocal(horarios[r]);
+    document.getElementById("hecha-" + r).checked = (post.hechas || {})[r] === true;
   });
-  cont.querySelectorAll(".btn-copiar").forEach(btn => btn.addEventListener("click", () => copiarTextoDeRed(btn)));
+  cont.querySelectorAll(".btn-copiar[data-red]").forEach(btn => btn.addEventListener("click", () => copiarTextoDeRed(btn)));
+  // Prompt para un generador de video con IA, armado con las escenas del guion de TikTok
+  const btnPrompt = document.getElementById("btn-prompt-video");
+  if (btnPrompt) btnPrompt.addEventListener("click", () => {
+    const prompt = promptDeVideo(document.getElementById("tx-tiktok").value);
+    copiarTexto(btnPrompt, prompt, "El guion no trae escenas con tiempo");
+  });
 }
 
 async function copiarTextoDeRed(btn) {
   const campo = document.getElementById("tx-" + btn.dataset.red);
+  await copiarTexto(btn, campo.value, "", campo);
+}
+
+// Copia `texto` al portapapeles y avisa en el propio botón. Sin texto muestra `sinTexto`.
+async function copiarTexto(btn, texto, sinTexto = "", campo = null) {
+  const original = btn.dataset.original || btn.textContent;
+  btn.dataset.original = original;
+  if (!texto && sinTexto) {
+    btn.textContent = sinTexto;
+    setTimeout(() => { btn.textContent = original; }, 2200);
+    return false;
+  }
   let copiado = false;
   try {
-    await navigator.clipboard.writeText(campo.value);
+    await navigator.clipboard.writeText(texto);
     copiado = true;
   } catch (err) {
-    campo.select();
-    try { copiado = document.execCommand("copy"); } catch (e) { copiado = false; }
+    if (campo) {
+      campo.select();
+      try { copiado = document.execCommand("copy"); } catch (e) { copiado = false; }
+    }
   }
-  const original = btn.textContent;
-  btn.textContent = copiado ? "¡Copiado!" : "Selecciona y copia";
+  btn.textContent = copiado ? "¡Copiado!" : "No se pudo copiar";
   setTimeout(() => { btn.textContent = original; }, 1600);
+  return copiado;
+}
+
+// ============================================================================
+// AGENDA DEL DÍA — "Hoy toca publicar": lo que hay que hacer, en orden de hora
+// ============================================================================
+function textoParaAccion(post, red) {
+  const guardados = post.textos || {};
+  const base = textosPorRed(post.copy || "");
+  return guardados[red] !== undefined ? guardados[red] : (base[red] || "");
+}
+
+// Cuando todas las redes de una publicación están hechas, pasa a «Publicada».
+function avanceDeEstado(post, hechas, horarios, plataformas) {
+  const redes = redesDeAgenda({ horarios: horarios !== undefined ? horarios : post.horarios, plataformas: plataformas !== undefined ? plataformas : post.plataformas });
+  const todas = redes.length > 0 && redes.every(r => hechas[r] === true);
+  return todas && post.estado !== "publicada" ? { estado: "publicada" } : {};
+}
+
+async function marcarAccion(postId, clase, red, valor) {
+  const post = estadoApp.posts.find(p => p.id === postId);
+  const msg = document.getElementById("agenda-msg");
+  if (!post) return false;
+  const cambios = { actualizadoEn: serverTimestamp(), ultimoEditor: estadoApp.usuarioUid };
+  if (clase === "historia") {
+    cambios.historiaHecha = valor;
+  } else {
+    const hechas = { ...(post.hechas || {}), [red]: valor };
+    cambios.hechas = hechas;
+    Object.assign(cambios, avanceDeEstado(post, hechas));
+  }
+  try {
+    await updateDoc(doc(db, "posts", post.id), cambios);
+  } catch (err) {
+    console.error("Error al marcar la acción:", err);
+    if (msg) { msg.textContent = mensajeErrorFirestore(err); msg.hidden = false; }
+    return false;
+  }
+  Object.assign(post, cambios, { actualizadoEn: Timestamp.now() });
+  return true;
+}
+
+function renderAgenda() {
+  const dia = estadoApp.fechaAncla;
+  const ahora = new Date();
+  const acciones = accionesDelDia(estadoApp.posts, dia, ahora);
+  const hechas = acciones.filter(a => a.hecha).length;
+  const titulo = id => { const p = estadoApp.posts.find(x => x.id === id); return (p && p.titulo) || "(sin título)"; };
+  const esHoy = mismoDia(dia, ahora);
+  const cabecera = esHoy ? "Hoy toca publicar" : `Toca publicar el ${_fechaCorta(dia)}`;
+
+  const filas = acciones.map((a, i) => {
+    const p = estadoApp.posts.find(x => x.id === a.postId);
+    const esHistoria = a.clase === "historia";
+    const etiqueta = esHistoria ? "Historia de Instagram" : NOMBRE_RED[a.red];
+    const nota = esHistoria ? "Republica el flyer en historias (usa la versión vertical de MiRebranda)." : "";
+    const botones = [];
+    if (!esHistoria) {
+      botones.push(`<button type="button" class="btn-copiar accion-copiar" data-id="${escapeHtml(a.postId)}" data-red="${a.red}">Copiar texto</button>`);
+      if (a.red === "tiktok" && promptDeVideo(textoParaAccion(p, "tiktok"))) {
+        botones.push(`<button type="button" class="btn-copiar accion-prompt" data-id="${escapeHtml(a.postId)}">Copiar prompt de video</button>`);
+      }
+    }
+    botones.push(`<button type="button" class="accion-abrir" data-id="${escapeHtml(a.postId)}">Abrir</button>`);
+    return `
+      <li class="accion ${a.hecha ? "hecha" : ""} ${a.vencida ? "vencida" : ""}">
+        <input type="checkbox" class="accion-check" id="acc-${i}" data-id="${escapeHtml(a.postId)}" data-clase="${a.clase}" data-red="${a.red}"
+          ${a.hecha ? "checked" : ""} aria-label="Hecho: ${escapeHtml(etiqueta)} — ${escapeHtml(titulo(a.postId))}" />
+        <span class="accion-hora">${_horaCorta(a.hora)}</span>
+        <div class="accion-info">
+          <strong>${escapeHtml(etiqueta)}</strong> <span class="accion-tipo">${ETIQUETA_TIPO[a.tipoPost]}</span>
+          ${a.vencida ? '<span class="accion-atraso">⚠ Atrasada</span>' : ""}
+          <div class="accion-titulo">${escapeHtml(titulo(a.postId))}</div>
+          ${nota ? `<div class="accion-nota">${escapeHtml(nota)}</div>` : ""}
+        </div>
+        <div class="accion-botones">${botones.join("")}</div>
+      </li>`;
+  }).join("");
+
+  contenedor.innerHTML = `
+    <section class="agenda" aria-label="Agenda del día">
+      <h2 class="agenda-titulo">${escapeHtml(cabecera)}</h2>
+      <p class="agenda-resumen" aria-live="polite">${acciones.length ? `${hechas} de ${acciones.length} hechas` : ""}</p>
+      <p id="agenda-msg" class="error-msg" role="alert" hidden></p>
+      ${filas ? `<ul class="agenda-lista">${filas}</ul>` : '<p class="tarjeta-vacio">No hay nada programado para este día.</p>'}
+    </section>`;
+
+  contenedor.querySelectorAll(".accion-check").forEach(chk => chk.addEventListener("change", async () => {
+    const ok = await marcarAccion(chk.dataset.id, chk.dataset.clase, chk.dataset.red, chk.checked);
+    if (!ok) chk.checked = !chk.checked;
+    render();
+  }));
+  contenedor.querySelectorAll(".accion-copiar").forEach(btn => btn.addEventListener("click", () => {
+    const p = estadoApp.posts.find(x => x.id === btn.dataset.id);
+    copiarTexto(btn, textoParaAccion(p, btn.dataset.red));
+  }));
+  contenedor.querySelectorAll(".accion-prompt").forEach(btn => btn.addEventListener("click", () => {
+    const p = estadoApp.posts.find(x => x.id === btn.dataset.id);
+    copiarTexto(btn, promptDeVideo(textoParaAccion(p, "tiktok")));
+  }));
+  contenedor.querySelectorAll(".accion-abrir").forEach(btn => btn.addEventListener("click", () => abrirModal(btn.dataset.id)));
 }
 
 // ============================================================================
