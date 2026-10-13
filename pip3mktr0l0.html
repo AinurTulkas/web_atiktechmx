@@ -904,7 +904,8 @@ function postsDelDia(fecha) {
 }
 
 const NOMBRES_MES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-const NOMBRES_DIA_CORTO = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+const NOMBRES_DIA_CORTO = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];  // índice = Date.getDay()
+const DIAS_EN_ORDEN_DE_SEMANA = [1, 2, 3, 4, 5, 6, 0];                  // la semana empieza en lunes
 
 // ============================================================================
 // NAVEGACIÓN ENTRE VISTAS
@@ -1009,7 +1010,10 @@ function renderMes() {
   const hoy = new Date();
 
   let html = `<div class="grid-mes">`;
-  NOMBRES_DIA_CORTO.forEach(n => html += `<div class="dia-semana-header">${n}</div>`);
+  // La cuadrícula arranca en LUNES (inicioDeSemana); los encabezados deben seguir ese
+  // mismo orden. Antes salían Dom..Sáb sobre una cuadrícula que empezaba en lunes y
+  // todo el mes se veía corrido un día (el 16 de octubre aparecía como jueves).
+  DIAS_EN_ORDEN_DE_SEMANA.forEach(i => html += `<div class="dia-semana-header">${NOMBRES_DIA_CORTO[i]}</div>`);
 
   for (let i = 0; i < 42; i++) {
     const dia = new Date(inicioGrid);
