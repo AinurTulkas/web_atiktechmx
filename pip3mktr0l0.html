@@ -931,10 +931,25 @@ function seccionesDeCopy(copy) {
   return out;
 }
 
-// Texto inicial por red, a partir del copy (Instagram y Facebook comparten el post).
+// Texto inicial por red, a partir del copy. Instagram, Facebook y TikTok comparten la descripción
+// (con hashtags); el guion del video va aparte, en `guion`.
 function textosPorRed(copy) {
   const s = seccionesDeCopy(copy);
-  return { instagram: s.post, facebook: s.post, tiktok: s.guion, whatsapp: s.whatsapp };
+  return { instagram: s.post, facebook: s.post, tiktok: s.post, whatsapp: s.whatsapp, guion: s.guion };
+}
+
+// Textos vigentes de una publicación: lo editado (`post.textos`) o, si falta, lo que sale del copy.
+// Las publicaciones guardadas antes de separar el guion traían el guion en `textos.tiktok`: se pasa a `guion`.
+function textosDePost(post) {
+  const base = textosPorRed(post.copy || "");
+  const g = post.textos || {};
+  const out = {};
+  Object.keys(base).forEach(k => { out[k] = g[k] !== undefined ? g[k] : base[k]; });
+  if (g.guion === undefined && g.tiktok !== undefined && g.tiktok === seccionesDeCopy(post.copy || "").guion) {
+    out.guion = g.tiktok;
+    out.tiktok = base.tiktok;
+  }
+  return out;
 }
 
 // ------------------------------------------------------------ planificador
@@ -1884,6 +1899,7 @@ document.getElementById("btn-guardar").addEventListener("click", async () => {
     const d = v ? new Date(v) : null;
     if (d && !isNaN(d)) horarios[r] = Timestamp.fromDate(d);
   });
+  textos.guion = document.getElementById("tx-guion").value;
   if (!fechaProgramada && Object.keys(horarios).length) {
     fechaProgramada = Timestamp.fromDate(new Date(Math.min(...Object.values(horarios).map(t => t.toDate().getTime()))));
   }
@@ -2114,8 +2130,7 @@ function valorDateTimeLocal(ts) {
 // Un cuadro por red con su horario y su botón Copiar. El texto sale de `post.textos` (lo que se
 // editó aquí) o, si no hay, de las secciones del copy que manda MiRebranda.
 function renderBloquesRedes(post) {
-  const guardados = post.textos || {};
-  const base = textosPorRed(post.copy || "");
+  const textosPost = textosDePost(post);
   const horarios = post.horarios || {};
   const cont = document.getElementById("bloques-redes");
   cont.innerHTML = REDES_PLAN.map(r => `
@@ -2125,20 +2140,28 @@ function renderBloquesRedes(post) {
         <input type="datetime-local" id="hr-${r}" class="red-hora" aria-label="Horario en ${NOMBRE_RED[r]}" />
         <label class="red-hecha"><input type="checkbox" id="hecha-${r}" /> Publicado</label>
         <button type="button" class="btn-copiar" data-red="${r}" aria-label="Copiar el texto de ${NOMBRE_RED[r]}">Copiar</button>
-        ${r === "tiktok" ? '<button type="button" class="btn-copiar" id="btn-prompt-video" aria-label="Copiar prompt de video para IA">Prompt de video</button>' : ""}
       </div>
       <textarea id="tx-${r}" rows="5" aria-label="Texto para ${NOMBRE_RED[r]}"></textarea>
-    </div>`).join("");
+    </div>`).join("") + `
+    <div class="red-bloque">
+      <div class="red-cab">
+        <label class="red-nombre" for="tx-guion">Guion del video</label>
+        <button type="button" class="btn-copiar" data-red="guion" aria-label="Copiar el guion del video">Copiar</button>
+        <button type="button" class="btn-copiar" id="btn-prompt-video" aria-label="Copiar prompt de video para IA">Prompt de video</button>
+      </div>
+      <textarea id="tx-guion" rows="5" aria-label="Guion del video"></textarea>
+    </div>`;
   REDES_PLAN.forEach(r => {
-    document.getElementById("tx-" + r).value = guardados[r] !== undefined ? guardados[r] : (base[r] || "");
+    document.getElementById("tx-" + r).value = textosPost[r] || "";
     document.getElementById("hr-" + r).value = valorDateTimeLocal(horarios[r]);
     document.getElementById("hecha-" + r).checked = (post.hechas || {})[r] === true;
   });
+  document.getElementById("tx-guion").value = textosPost.guion || "";
   cont.querySelectorAll(".btn-copiar[data-red]").forEach(btn => btn.addEventListener("click", () => copiarTextoDeRed(btn)));
   // Prompt para un generador de video con IA, armado con las escenas del guion de TikTok
   const btnPrompt = document.getElementById("btn-prompt-video");
   if (btnPrompt) btnPrompt.addEventListener("click", () => {
-    const prompt = promptDeVideo(document.getElementById("tx-tiktok").value);
+    const prompt = promptDeVideo(document.getElementById("tx-guion").value);
     copiarTexto(btnPrompt, prompt, "El guion no trae escenas con tiempo");
   });
 }
@@ -2235,9 +2258,7 @@ async function aplicarAutoPublicado() {
 // AGENDA DEL DÍA — "Hoy toca publicar": lo que hay que hacer, en orden de hora
 // ============================================================================
 function textoParaAccion(post, red) {
-  const guardados = post.textos || {};
-  const base = textosPorRed(post.copy || "");
-  return guardados[red] !== undefined ? guardados[red] : (base[red] || "");
+  return textosDePost(post)[red] || "";
 }
 
 // Cuando todas las redes de una publicación están hechas, pasa a «Publicada».
@@ -2288,7 +2309,7 @@ function renderAgenda() {
     const botones = [];
     if (!esHistoria) {
       botones.push(`<button type="button" class="btn-copiar accion-copiar" data-id="${escapeHtml(a.postId)}" data-red="${a.red}">Copiar texto</button>`);
-      if (a.red === "tiktok" && promptDeVideo(textoParaAccion(p, "tiktok"))) {
+      if (a.red === "tiktok" && promptDeVideo(textoParaAccion(p, "guion"))) {
         botones.push(`<button type="button" class="btn-copiar accion-prompt" data-id="${escapeHtml(a.postId)}">Copiar prompt de video</button>`);
       }
     }
@@ -2328,7 +2349,7 @@ function renderAgenda() {
   }));
   contenedor.querySelectorAll(".accion-prompt").forEach(btn => btn.addEventListener("click", () => {
     const p = estadoApp.posts.find(x => x.id === btn.dataset.id);
-    copiarTexto(btn, promptDeVideo(textoParaAccion(p, "tiktok")));
+    copiarTexto(btn, promptDeVideo(textoParaAccion(p, "guion")));
   }));
   contenedor.querySelectorAll(".accion-abrir").forEach(btn => btn.addEventListener("click", () => abrirModal(btn.dataset.id)));
 }
@@ -2427,7 +2448,7 @@ async function aceptarSugerencia(s) {
     horarios,
     plataformas: [...new Set([...(post.plataformas || []), ...nombres])],
     tipo: s.tipo,
-    textos: post.textos || textosPorRed(post.copy || ""),
+    textos: textosDePost(post),
     estado: "programada",
     actualizadoEn: serverTimestamp(),
     ultimoEditor: estadoApp.usuarioUid,
