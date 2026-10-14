@@ -832,12 +832,15 @@ const PLAN = {
   diasSinPublicar: [0],                               // 0 = domingo
   // Cada fila = horas base de los huecos de UN día; se elige la fila por número de día,
   // así la hora cambia todos los días. Mayor base + mayor desfase <= 20:00.
+  // La 1.ª promoción del día usa la columna 1, la 2.ª la columna 2 y la 3.ª (vigencia) la 3: por eso
+  // la 1.ª columna recorre TODA la ventana (tarde temprano, media y noche) y no solo las 2-3 pm.
   rotacion: [
     [14 * 60 + 30, 18 * 60 + 30, 16 * 60 + 30],
-    [15 * 60,      19 * 60,      17 * 60],
-    [14 * 60,      18 * 60,      16 * 60],
-    [15 * 60 + 30, 19 * 60 + 15, 17 * 60 + 15],
-    [14 * 60 + 45, 18 * 60 + 45, 16 * 60 + 45],
+    [17 * 60,      14 * 60 + 15, 19 * 60],
+    [19 * 60,      15 * 60 + 30, 17 * 60 + 15],
+    [15 * 60,      19 * 60 + 15, 16 * 60 + 45],
+    [18 * 60,      14 * 60 + 45, 16 * 60],
+    [16 * 60 + 15, 19 * 60 + 30, 14 * 60],
   ],
   // Horas base para tips y videos (rotan igual), entre los huecos de las promociones.
   rotacionExtra: [16 * 60, 17 * 60, 16 * 60 + 30, 17 * 60 + 30, 15 * 60 + 30, 18 * 60],
