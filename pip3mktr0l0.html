@@ -1797,6 +1797,7 @@ function abrirModal(postId) {
   document.getElementById("vigencia-nota").textContent =
     vig && vig.detectada ? "Detectada en el texto: cámbiala o bórrala si no es correcta." : "";
   renderBloquesRedes(post);
+  etiquetasPublicado();
   // Publicación sin fecha: se precargan los horarios SUGERIDOS (fecha, hora y cada red) y se
   // marcan Instagram, Facebook y TikTok; se guardan al pulsar Guardar (o «Aceptar» en Sugerencias).
   const sug = sugerenciaDe(post);
@@ -2131,6 +2132,13 @@ function valorDateTimeLocal(ts) {
   return fechaLocalISO(d) + "T" + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 }
 
+// En un video, la casilla de cada red es la del reel de esa red.
+function etiquetasPublicado() {
+  const esVideo = document.getElementById("campo-tipo").value === "video";
+  REDES_PLAN.forEach(r => { document.getElementById("hecha-txt-" + r).textContent = esVideo ? "Reel" : "Publicado"; });
+}
+document.getElementById("campo-tipo").addEventListener("change", etiquetasPublicado);
+
 // Un cuadro por red con su horario y su botón Copiar. El texto sale de `post.textos` (lo que se
 // editó aquí) o, si no hay, de las secciones del copy que manda MiRebranda.
 function renderBloquesRedes(post) {
@@ -2142,7 +2150,7 @@ function renderBloquesRedes(post) {
       <div class="red-cab">
         <label class="red-nombre" for="hr-${r}">${NOMBRE_RED[r]}</label>
         <input type="datetime-local" id="hr-${r}" class="red-hora" aria-label="Horario en ${NOMBRE_RED[r]}" />
-        <label class="red-hecha"><input type="checkbox" id="hecha-${r}" /> Publicado</label>
+        <label class="red-hecha"><input type="checkbox" id="hecha-${r}" /> <span id="hecha-txt-${r}">Publicado</span></label>
         <label class="red-hecha" id="fila-historia-${r}" hidden><input type="checkbox" id="historia-${r}" /> Historia</label>
         <button type="button" class="btn-copiar" data-red="${r}" aria-label="Copiar el texto de ${NOMBRE_RED[r]}">Copiar</button>
       </div>
@@ -2314,7 +2322,7 @@ function renderAgenda() {
   const filas = acciones.map((a, i) => {
     const p = estadoApp.posts.find(x => x.id === a.postId);
     const esHistoria = a.clase === "historia";
-    const etiqueta = esHistoria ? `Historia de ${NOMBRE_RED[a.red]}` : NOMBRE_RED[a.red];
+    const etiqueta = esHistoria ? `Historia de ${NOMBRE_RED[a.red]}` : (a.tipoPost === "video" ? `Reel de ${NOMBRE_RED[a.red]}` : NOMBRE_RED[a.red]);
     const nota = esHistoria ? "Republica el flyer en historias (usa la versión vertical de MiRebranda)." : "";
     const botones = [];
     if (!esHistoria) {
