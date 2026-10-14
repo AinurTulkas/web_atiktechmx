@@ -1946,14 +1946,23 @@ document.getElementById("btn-eliminar").addEventListener("click", async () => {
   const post = estadoApp.postSeleccionado;
   if (!post) return;
   if (!confirm(`¿Eliminar "${post.titulo}"? Esta acción no se puede deshacer.`)) return;
+  const btn = document.getElementById("btn-eliminar");
+  btn.disabled = true;
+  const textoBtn = btn.textContent;
+  btn.textContent = "Eliminando…";
   try {
     await deleteDoc(doc(db, "posts", post.id));
   } catch (err) {
     console.error("Error al eliminar publicación:", err);
     const msg = document.getElementById("guardar-msg");
-    msg.textContent = mensajeErrorFirestore(err);
+    msg.textContent = "No se eliminó: " + mensajeErrorFirestore(err);
     msg.hidden = false;
+    msg.scrollIntoView({ block: "nearest" });
+    alert(msg.textContent);
     return;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = textoBtn;
   }
   estadoApp.posts = estadoApp.posts.filter(p => p.id !== post.id);
   cerrarDialogo(modalPost);
