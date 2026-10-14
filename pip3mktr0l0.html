@@ -1878,9 +1878,13 @@ function leerPlataformasSeleccionadas() {
 
 document.getElementById("modal-cerrar").addEventListener("click", () => cerrarDialogo(modalPost));
 
-document.getElementById("btn-guardar").addEventListener("click", async () => {
+// Guarda el formulario del modal. Devuelve true si quedó guardado (lo usa también «Mover a…»).
+async function guardarPublicacion() {
   const post = estadoApp.postSeleccionado;
-  if (!post) return;
+  if (!post) return false;
+  const msg = document.getElementById("guardar-msg");
+  msg.textContent = "Guardando…";
+  msg.hidden = false;
 
   const fechaVal = document.getElementById("campo-fecha").value;
   const horaVal = document.getElementById("campo-hora").value;
@@ -1947,20 +1951,25 @@ document.getElementById("btn-guardar").addEventListener("click", async () => {
     cambios.vigenciaManual = true;
   }
 
-  const msg = document.getElementById("guardar-msg");
   try {
     await updateDoc(doc(db, "posts", post.id), cambios);
   } catch (err) {
     console.error("Error al guardar publicación:", err);
     msg.textContent = mensajeErrorFirestore(err);
     msg.hidden = false;
-    return;
+    return false;
   }
   Object.assign(post, cambios, { actualizadoEn: Timestamp.now() }); // reflejo local inmediato
 
   msg.textContent = "Guardado ✓";
   msg.hidden = false;
   render();
+  return true;
+}
+document.getElementById("btn-guardar").addEventListener("click", async (e) => {
+  const boton = e.currentTarget;
+  boton.disabled = true;
+  try { await guardarPublicacion(); } finally { boton.disabled = false; }
 });
 
 document.getElementById("btn-eliminar").addEventListener("click", async () => {
@@ -1993,13 +2002,38 @@ document.getElementById("btn-eliminar").addEventListener("click", async () => {
 async function moverEtapa(postId, nuevoEstado) {
   const post = estadoApp.posts.find(p => p.id === postId);
   if (!post) return;
+  // Lo que está en el formulario se guarda primero: así la fecha y los horarios por red que se ven
+  // son los que quedan al mover.
+  if (estadoApp.postSeleccionado && estadoApp.postSeleccionado.id === postId && !modalPost.hidden) {
+    if (!(await guardarPublicacion())) return;
+  }
+  const cambios = {
+    estado: nuevoEstado,
+    publicadaAuto: false,
+    actualizadoEn: serverTimestamp(),
+    ultimoEditor: estadoApp.usuarioUid,
+  };
+  // «Programada» necesita fecha: si no tiene, la de los horarios por red o, si no, la sugerida.
+  // Nunca la de creación (así una publicación nueva no caía en el día en que se generó).
+  if (nuevoEstado === "programada" && !post.fechaProgramada) {
+    const hs = Object.values(post.horarios || {}).map(h => _aFecha(h)).filter(Boolean);
+    const sug = sugerenciaDe(post);
+    const fechas = hs.length ? hs : (sug ? Object.values(sug.horarios) : []);
+    if (fechas.length) {
+      cambios.fechaProgramada = Timestamp.fromDate(new Date(Math.min(...fechas.map(d => d.getTime()))));
+      if (!hs.length) {
+        cambios.horarios = Object.fromEntries(Object.entries(sug.horarios).map(([r, d]) => [r, Timestamp.fromDate(d)]));
+        cambios.plataformas = [...new Set([...(post.plataformas || []), ...Object.keys(sug.horarios).map(r => NOMBRE_RED[r])])];
+      }
+    } else {
+      const m = document.getElementById("guardar-msg");
+      m.textContent = "Pon una fecha antes de pasarla a Programada.";
+      m.hidden = false;
+      return;
+    }
+  }
   try {
-    await updateDoc(doc(db, "posts", postId), {
-      estado: nuevoEstado,
-      publicadaAuto: false,
-      actualizadoEn: serverTimestamp(),
-      ultimoEditor: estadoApp.usuarioUid,
-    });
+    await updateDoc(doc(db, "posts", postId), cambios);
   } catch (err) {
     console.error("Error al mover de etapa:", err);
     const msg = document.getElementById("guardar-msg");
@@ -2007,9 +2041,7 @@ async function moverEtapa(postId, nuevoEstado) {
     msg.hidden = false;
     return;
   }
-  post.estado = nuevoEstado;
-  post.publicadaAuto = false;
-  post.actualizadoEn = Timestamp.now();
+  Object.assign(post, cambios, { actualizadoEn: Timestamp.now() });
   cerrarDialogo(modalPost);
   render();
 }
