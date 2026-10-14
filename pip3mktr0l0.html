@@ -1473,10 +1473,23 @@ async function cargarDatos() {
   }
 }
 
-document.getElementById("btn-recargar").addEventListener("click", async () => {
+let ultimaCarga = Date.now();
+async function recargarTodo() {
   await cargarDatos();
+  ultimaCarga = Date.now();
   render();
   aplicarAutoPublicado();
+}
+document.getElementById("btn-recargar").addEventListener("click", recargarTodo);
+
+// Al volver a la página (o abrir la app instalada) después de un rato se actualizan los datos solos:
+// lo que MiRebranda mandó mientras tanto aparece sin pulsar Recargar. Con un cuadro abierto no se
+// toca nada, para no pisar lo que se está editando.
+document.addEventListener("visibilitychange", () => {
+  const hayCuadroAbierto = [...document.querySelectorAll(".modal-fondo")].some(f => !f.hidden);
+  if (document.visibilityState === "visible" && estadoApp.usuarioUid && !hayCuadroAbierto && Date.now() - ultimaCarga > 3 * 60 * 1000) {
+    recargarTodo();
+  }
 });
 
 // ============================================================================
