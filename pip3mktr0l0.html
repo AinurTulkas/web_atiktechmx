@@ -645,6 +645,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 
       <div class="usuario">
         <button id="btn-instalar" title="Instalar como app en este dispositivo" aria-label="Instalar como app" hidden><span aria-hidden="true">📲</span><span class="txt-sug"> Instalar</span></button>
+        <button id="btn-nueva" title="Crear una publicación a mano" aria-label="Nueva publicación"><span aria-hidden="true">＋</span><span class="txt-sug"> Nueva</span></button>
         <button id="btn-sugerencias" title="Sugerencias de programación" aria-label="Sugerencias de programación"><span aria-hidden="true">📅</span><span class="txt-sug"> Sugerencias</span><span id="sug-contador" class="contador-sug" hidden></span></button>
         <button id="btn-avance" title="Avance del proyecto" aria-label="Avance del proyecto" hidden><span aria-hidden="true">📈</span><span class="txt-sug"> Avance</span></button>
         <button id="btn-recargar" title="Recargar datos" aria-label="Recargar datos"><span aria-hidden="true">⟳</span><span class="txt-recargar"> Recargar</span></button>
@@ -746,6 +747,29 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
         <span id="sug-msg" class="guardar-msg" role="status" hidden></span>
         <button id="sug-aceptar-todas" class="btn-primario">Aceptar todas</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ---------- Nueva publicación a mano ---------- -->
+  <div id="modal-nueva" class="modal-fondo" hidden>
+    <div class="modal-caja" role="dialog" aria-modal="true" aria-label="Nueva publicación">
+      <button class="modal-cerrar" id="nueva-cerrar" aria-label="Cerrar"><span aria-hidden="true">✕</span></button>
+      <h2>Nueva publicación</h2>
+      <form id="form-nueva" class="form-nuevo-usuario">
+        <input type="text" id="nueva-titulo" placeholder="Título (ej. F1 CDMX)" maxlength="120" required />
+        <select id="nueva-tipo" aria-label="Tipo">
+          <option value="promo">Promoción</option>
+          <option value="tip">Tip</option>
+          <option value="video">Video</option>
+        </select>
+        <textarea id="nueva-copy" rows="6" placeholder="Texto para publicar, con #hashtags (opcional)"></textarea>
+        <label class="hint" for="nueva-fecha">Fecha (opcional; si la dejas vacía el calendario te sugiere una)</label>
+        <input type="date" id="nueva-fecha" />
+        <div class="modal-acciones">
+          <span id="nueva-msg" class="guardar-msg" role="status" hidden></span>
+          <button type="submit" class="btn-primario" id="nueva-crear">Crear</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -1231,7 +1255,7 @@ import {
   getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc,
+  getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, addDoc,
   deleteDoc, serverTimestamp, Timestamp, query, where
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
@@ -2541,6 +2565,56 @@ document.getElementById("sug-aceptar-todas").addEventListener("click", async () 
 });
 
 // ============================================================================
+// NUEVA PUBLICACIÓN A MANO
+// ============================================================================
+const modalNueva = document.getElementById("modal-nueva");
+document.getElementById("btn-nueva").addEventListener("click", () => {
+  document.getElementById("form-nueva").reset();
+  document.getElementById("nueva-msg").hidden = true;
+  abrirDialogo(modalNueva, document.getElementById("nueva-titulo"));
+});
+document.getElementById("nueva-cerrar").addEventListener("click", () => cerrarDialogo(modalNueva));
+document.getElementById("form-nueva").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const boton = document.getElementById("nueva-crear"), msg = document.getElementById("nueva-msg");
+  const f = document.getElementById("nueva-fecha").value;
+  const ahora = Timestamp.now();
+  const datos = {
+    titulo: document.getElementById("nueva-titulo").value.trim(),
+    tipo: document.getElementById("nueva-tipo").value,
+    plataformas: ["Instagram", "Facebook", "TikTok"],
+    estado: "por_disenar",
+    fechaProgramada: f ? Timestamp.fromDate(new Date(...f.split("-").map((n, i) => i === 1 ? Number(n) - 1 : Number(n)), 14, 0)) : null,
+    copy: document.getElementById("nueva-copy").value,
+    notas: "",
+    fuente: "Manual",
+    destacado: false,
+    imagenUrl: "",
+    imagenStoragePath: "",
+    creadoEn: ahora,
+    actualizadoEn: ahora,
+    creadoPor: "calendario",
+    ultimoEditor: estadoApp.usuarioUid,
+    agencia: AGENCIA,
+  };
+  boton.disabled = true;
+  msg.textContent = "Creando…";
+  msg.hidden = false;
+  try {
+    const ref = await addDoc(collection(db, "posts"), datos);
+    estadoApp.posts.push({ id: ref.id, ...datos });
+  } catch (err) {
+    console.error("Error al crear publicación:", err);
+    msg.textContent = "No se creó: " + mensajeErrorFirestore(err);
+    boton.disabled = false;
+    return;
+  }
+  boton.disabled = false;
+  cerrarDialogo(modalNueva);
+  render();
+});
+
+// ============================================================================
 // AVANCE DEL PROYECTO: método de METODO-AVANCE.md (pendiente 0 · parcial 0.4 · hecho 0.8 · verificado 1)
 // Los datos salen de ESTADO.md al armar la página (build.py); sin ellos el botón no aparece.
 // ============================================================================
@@ -2596,13 +2670,13 @@ function cerrarDialogo(fondo) {
 }
 
 function cerrarModalesAbiertos() {
-  [modalSugerencias, modalUsuarios, modalPost, modalAvance].forEach(f => { if (!f.hidden) cerrarDialogo(f); });
+  [modalSugerencias, modalUsuarios, modalPost, modalAvance, modalNueva].forEach(f => { if (!f.hidden) cerrarDialogo(f); });
 }
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { cerrarModalesAbiertos(); return; }
   // Tab se queda dentro del diálogo abierto
   if (e.key === "Tab") {
-    const abierto = [modalSugerencias, modalUsuarios, modalPost, modalAvance].find(f => !f.hidden);
+    const abierto = [modalSugerencias, modalUsuarios, modalPost, modalAvance, modalNueva].find(f => !f.hidden);
     if (!abierto) return;
     const foc = Array.from(abierto.querySelectorAll("button, input, select, textarea, [tabindex]:not([tabindex='-1'])"))
       .filter(el => !el.disabled && !el.hidden && el.offsetParent !== null);
@@ -2613,7 +2687,7 @@ document.addEventListener("keydown", (e) => {
     else if (!abierto.contains(document.activeElement)) { e.preventDefault(); primero.focus(); }
   }
 });
-[modalPost, modalUsuarios, modalSugerencias, modalAvance].forEach(fondo => {
+[modalPost, modalUsuarios, modalSugerencias, modalAvance, modalNueva].forEach(fondo => {
   // solo si el clic fue en el fondo mismo, no dentro de la caja
   fondo.addEventListener("click", (e) => { if (e.target === fondo) cerrarDialogo(fondo); });
 });
