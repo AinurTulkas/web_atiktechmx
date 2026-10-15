@@ -875,7 +875,7 @@ const PLAN = {
   diasDeEspera: 1,          // sin vigencia: el primer día posible es mañana, no hoy
   autoPublicarDespuesMin: 5,   // una publicación «Programada» se da por publicada 5 min después de su hora
   horizonteDias: 90,
-  metas: { tip: { min: 2 }, video: { min: 3, max: 4 } },
+  metas: { promo: { meta: 12, tope: 15 }, tip: { min: 2 }, video: { min: 4, max: 4 } },   // promo: 2 por día x 6 días = 12; hasta 15 con las de vigencia
 };
 const REDES_PLAN = ["instagram", "facebook", "tiktok", "whatsapp"];
 const NOMBRE_RED = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", whatsapp: "WhatsApp" };
@@ -1104,6 +1104,17 @@ function planificarTodo(posts, ahora = new Date(), plan = PLAN) {
   return { sugerencias, avisos };
 }
 
+// Promociones esperando fecha, y hasta qué día están cubiertas las promociones (programadas o ya
+// sugeridas): si queda poco, conviene cargar flyers nuevos. `sugerencias` = resultado de planificarTodo.
+function colaDePromos(posts, sugerencias, ahora = new Date()) {
+  const hoy = _inicioDia(ahora);
+  const sinFecha = posts.filter(p => tipoDe(p) === "promo" && !_aFecha(p.fechaProgramada) && (p.estado === "por_disenar" || p.estado === "revisada")).length;
+  const fechas = posts.filter(p => tipoDe(p) === "promo").map(p => _aFecha(p.fechaProgramada)).filter(f => f && f >= hoy)
+    .concat((sugerencias || []).filter(s => s.tipo === "promo").map(s => s.dia));
+  const hasta = fechas.length ? new Date(Math.max(...fechas.map(f => _inicioDia(f).getTime()))) : null;
+  return { sinFecha, hasta, dias: hasta ? Math.round((hasta - hoy) / 86400000) : -1 };
+}
+
 // Metas de la semana (lunes a sábado) de la fecha `ref`: cuántos tips y videos hay con fecha.
 function metasSemana(posts, ref = new Date(), plan = PLAN) {
   const d = _inicioDia(ref);
@@ -1118,6 +1129,7 @@ function metasSemana(posts, ref = new Date(), plan = PLAN) {
   });
   return {
     lunes, promos: n.promo,
+    promo: { n: n.promo, meta: plan.metas.promo.meta, tope: plan.metas.promo.tope, ok: n.promo >= plan.metas.promo.meta, sobre: n.promo > plan.metas.promo.tope },
     tip: { n: n.tip, min: plan.metas.tip.min, ok: n.tip >= plan.metas.tip.min },
     video: { n: n.video, min: plan.metas.video.min, max: plan.metas.video.max, ok: n.video >= plan.metas.video.min },
   };
@@ -2603,6 +2615,7 @@ function renderMetas() {
   const el = document.getElementById("metas");
   if (!el) return;
   const m = metasSemana(estadoApp.posts, estadoApp.fechaAncla);
+  const cola = colaDePromos(estadoApp.posts, calcularSugerencias().sugerencias, new Date());
   const finSemana = _masDias(m.lunes, 5);
   const importa = _inicioDia(new Date()) <= _finDia(_masDias(m.lunes, 6));   // las metas pesan de esta semana en adelante
   const marca = ok => (!importa ? "" : ok ? "✓ " : "⚠ ");
@@ -2619,9 +2632,11 @@ function renderMetas() {
   el.innerHTML =
     `<button type="button" id="meta-hoy" class="meta-item meta-hoy ${claseHoy}" title="Abrir la agenda de hoy">${textoHoy}</button>` +
     `<span class="meta-item">Semana ${_fechaCorta(m.lunes)} – ${_fechaCorta(finSemana)}</span>` +
-    `<span class="meta-item">Promociones ${m.promos}</span>` +
+    `<span class="${clase(m.promo.ok && !m.promo.sobre)}" title="Meta ${m.promo.meta} por semana (2 por día); hasta ${m.promo.tope} con las de vigencia">${marca(m.promo.ok && !m.promo.sobre)}Promociones ${m.promo.n}/${m.promo.meta}${m.promo.n > m.promo.meta ? (m.promo.sobre ? ` (pasa del tope de ${m.promo.tope})` : ` (sobre meta, tope ${m.promo.tope})`) : ""}</span>` +
     `<span class="${clase(m.tip.ok)}">${marca(m.tip.ok)}Tips ${m.tip.n}/${m.tip.min}</span>` +
-    `<span class="${clase(m.video.ok)}">${marca(m.video.ok)}Videos ${m.video.n}/${m.video.min}–${m.video.max}</span>`;
+    `<span class="${clase(m.video.ok)}">${marca(m.video.ok)}Videos ${m.video.n}/${m.video.min}</span>` +
+    `<span class="meta-item" title="Promociones en Por diseñar o Revisada que aún no tienen fecha">Por programar ${cola.sinFecha}</span>` +
+    `<span class="${cola.dias < 5 ? "meta-item falta" : "meta-item"}" title="Última promoción programada o sugerida">${cola.dias < 5 ? "⚠ " : ""}${cola.hasta ? "Cubierto hasta el " + _fechaCorta(cola.hasta) : "Sin promociones por publicar"}</span>`;
 }
 
 document.getElementById("metas").addEventListener("click", e => {
