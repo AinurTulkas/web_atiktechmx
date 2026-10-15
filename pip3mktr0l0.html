@@ -1155,11 +1155,17 @@ function reelDe(post, plan = PLAN) {
 }
 // ¿Todo lo de historia / reel de esta publicación está hecho? null = no lleva.
 function estadoMarca(post, cual) {
-  const redes = redesDeHistoria(post);
-  if (cual === "historia") return llevaHistoria(post) ? redes.length > 0 && redes.every(r => historiaHechaDe(post, r)) : null;
+  if (cual === "historia") {
+    const redes = redesConHistoria(post);
+    return llevaHistoria(post) && redes.length ? redes.every(r => historiaHechaDe(post, r)) : null;
+  }
   if (!llevaReel(post)) return null;
-  if (tipoDe(post) === "video") return redes.length > 0 && redes.every(r => (post.hechas || {})[r] === true || post.estado === "publicada");
-  return redes.length > 0 && redes.every(r => (post.reelsHechos || {})[r] === true);
+  if (tipoDe(post) === "video") {
+    const redes = redesDeHistoria(post);
+    return redes.length > 0 && redes.every(r => (post.hechas || {})[r] === true || post.estado === "publicada");
+  }
+  const redes = redesConReel(post);
+  return redes.length ? redes.every(r => (post.reelsHechos || {})[r] === true) : null;
 }
 
 // Redes donde se republica la historia: las de feed que la publicación usa (WhatsApp queda fuera).
@@ -1167,6 +1173,10 @@ const REDES_HISTORIA = ["instagram", "facebook", "tiktok"];
 function redesDeHistoria(post) {
   return redesDeAgenda(post).filter(r => REDES_HISTORIA.includes(r));
 }
+// «No aplica» por red (p. ej. una historia que TikTok no deja publicar): esa red sale de la agenda,
+// del aviso de pendientes y de la marca H / R de la tarjeta.
+function redesConHistoria(post) { return redesDeHistoria(post).filter(r => !(post.historiasNA || {})[r]); }
+function redesConReel(post) { return redesDeHistoria(post).filter(r => !(post.reelsNA || {})[r]); }
 // ¿Ya se publicó la historia de esa red? `historiasHechas` es por red; las publicaciones antiguas
 // solo traían `historiaHecha` (una sola casilla): eso cuenta como todas hechas.
 function historiaHechaDe(post, red) {
@@ -1190,9 +1200,9 @@ function accionesDelDia(posts, dia, ahora = new Date()) {
       out.push({ postId: p.id, tipoPost: tipoDe(p), clase: "feed", red: r, hora, hecha: hechas[r] === true || p.estado === "publicada", auto: (p.hechasAuto || {})[r] === true });
     });
     const rl = reelDe(p);
-    if (rl && _clave(rl) === k) redesDeHistoria(p).forEach(r => out.push({ postId: p.id, tipoPost: tipoDe(p), clase: "reel", red: r, hora: rl, hecha: (p.reelsHechos || {})[r] === true }));
+    if (rl && _clave(rl) === k) redesConReel(p).forEach(r => out.push({ postId: p.id, tipoPost: tipoDe(p), clase: "reel", red: r, hora: rl, hecha: (p.reelsHechos || {})[r] === true }));
     const h = historiaDe(p);
-    if (h && _clave(h) === k) redesDeHistoria(p).forEach(r => out.push({ postId: p.id, tipoPost: tipoDe(p), clase: "historia", red: r, hora: h, hecha: historiaHechaDe(p, r) }));
+    if (h && _clave(h) === k) redesConHistoria(p).forEach(r => out.push({ postId: p.id, tipoPost: tipoDe(p), clase: "historia", red: r, hora: h, hecha: historiaHechaDe(p, r) }));
   });
   out.sort((a, b) => a.hora - b.hora || (a.clase !== "feed") - (b.clase !== "feed") || REDES_PLAN.indexOf(a.red) - REDES_PLAN.indexOf(b.red));
   out.forEach(a => { a.vencida = !a.hecha && new Date(a.hora.getTime() + 60 * 60000) < ahora; });
@@ -2081,9 +2091,11 @@ async function guardarPublicacion() {
   cambios.llevaReel = document.getElementById("campo-lleva-reel").checked;
   if (cambios.llevaHistoria) {
     cambios.historiasHechas = Object.fromEntries(REDES_HISTORIA.map(r => [r, document.getElementById("historia-" + r).checked]));
+    cambios.historiasNA = Object.fromEntries(REDES_HISTORIA.map(r => [r, document.getElementById("historia-na-" + r).checked]));
   }
   if (cambios.llevaReel && cambios.tipo !== "video") {
     cambios.reelsHechos = Object.fromEntries(REDES_HISTORIA.map(r => [r, document.getElementById("reel-" + r).checked]));
+    cambios.reelsNA = Object.fromEntries(REDES_HISTORIA.map(r => [r, document.getElementById("reel-na-" + r).checked]));
   }
   Object.assign(cambios, avanceDeEstado(post, hechas, horarios, cambios.plataformas));
   // Vigencia: solo se guarda si la persona la cambió (así una detectada del texto no se
@@ -2321,6 +2333,14 @@ function etiquetasPublicado() {
     document.getElementById("hecha-txt-" + r).textContent = esVideo && reel ? "Reel" : "Publicado";
     document.getElementById("fila-historia-" + r).hidden = !(historia && REDES_HISTORIA.includes(r));
     document.getElementById("fila-reel-" + r).hidden = !(reel && !esVideo && REDES_HISTORIA.includes(r));
+    document.getElementById("fila-historia-na-" + r).hidden = document.getElementById("fila-historia-" + r).hidden;
+    document.getElementById("fila-reel-na-" + r).hidden = document.getElementById("fila-reel-" + r).hidden;
+    // con «no aplica» la casilla de publicada se apaga y se bloquea
+    ["historia", "reel"].forEach(c => {
+      const na = document.getElementById(c + "-na-" + r).checked, caja = document.getElementById(c + "-" + r);
+      if (na) caja.checked = false;
+      caja.disabled = na;
+    });
   });
 }
 // Al cambiar el tipo, las casillas «lleva historia / reel» toman el valor por defecto de ese tipo.
@@ -2346,7 +2366,9 @@ function renderBloquesRedes(post) {
         <input type="datetime-local" id="hr-${r}" class="red-hora" aria-label="Horario en ${NOMBRE_RED[r]}" />
         <label class="red-hecha"><input type="checkbox" id="hecha-${r}" /> <span id="hecha-txt-${r}">Publicado</span></label>
         <label class="red-hecha" id="fila-historia-${r}" hidden><input type="checkbox" id="historia-${r}" /> Historia</label>
+        <label class="red-hecha" id="fila-historia-na-${r}" hidden title="Esta historia no se puede o no se va a publicar"><input type="checkbox" id="historia-na-${r}" /> Historia no aplica</label>
         <label class="red-hecha" id="fila-reel-${r}" hidden><input type="checkbox" id="reel-${r}" /> Reel</label>
+        <label class="red-hecha" id="fila-reel-na-${r}" hidden title="Este reel no se puede o no se va a publicar"><input type="checkbox" id="reel-na-${r}" /> Reel no aplica</label>
         <button type="button" class="btn-copiar" data-red="${r}" aria-label="Copiar el texto de ${NOMBRE_RED[r]}">Copiar</button>
       </div>
       <textarea id="tx-${r}" rows="5" aria-label="Texto para ${NOMBRE_RED[r]}"></textarea>
@@ -2365,6 +2387,9 @@ function renderBloquesRedes(post) {
     document.getElementById("hecha-" + r).checked = (post.hechas || {})[r] === true;
     document.getElementById("historia-" + r).checked = historiaHechaDe(post, r);
     document.getElementById("reel-" + r).checked = (post.reelsHechos || {})[r] === true;
+    document.getElementById("historia-na-" + r).checked = (post.historiasNA || {})[r] === true;
+    document.getElementById("reel-na-" + r).checked = (post.reelsNA || {})[r] === true;
+    ["historia", "reel"].forEach(c => document.getElementById(c + "-na-" + r).addEventListener("change", etiquetasPublicado));
   });
   document.getElementById("tx-guion").value = textosPost.guion || "";
   cont.querySelectorAll(".btn-copiar[data-red]").forEach(btn => btn.addEventListener("click", () => copiarTextoDeRed(btn)));
