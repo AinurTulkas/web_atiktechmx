@@ -627,6 +627,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .form-nota { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
 .nota-repite { display: flex; gap: 6px; }
 
+.modelos-notas { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.modelos-notas .hint { flex-basis: 100%; margin: 0; }
+.modelo-nota { display: inline-flex; border-radius: 999px; overflow: hidden; border: 1.5px solid #c9a800; background: #fff9c4; color: #3a3200; }
+.modelo-nota button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 12px; font-weight: 700; padding: 3px 8px; }
+
 </style>
 </head>
 <body>
@@ -1417,6 +1422,7 @@ const estadoApp = {
   usuarios: [],    // arreglo de {id, ...datos}
   vista: "mes",    // 'mes' | 'semana' | 'dia'
   fechaAncla: new Date(),
+  modelos: [],   // notas reutilizables (posts con tipo "nota_modelo"): la lista de la que se eligen
   notas: [],   // notas de día (posts con tipo "nota"): ideas sueltas, sin publicación
   filtroTipos: new Set(["promo", "tip", "video"]),   // tipos que se ven en el mes, la semana y el día
   postSeleccionado: null,
@@ -1554,11 +1560,13 @@ async function cargarDatos() {
     // Las notas de día viven en la misma colección pero NO son publicaciones: se separan aquí para que
     // no entren en conteos, metas, sugerencias ni agenda.
     estadoApp.notas = todos.filter(p => p.tipo === "nota" && !p.eliminada);
-    estadoApp.posts = todos.filter(p => p.tipo !== "nota");
+    estadoApp.modelos = todos.filter(p => p.tipo === "nota_modelo" && !p.eliminada);
+    estadoApp.posts = todos.filter(p => p.tipo !== "nota" && p.tipo !== "nota_modelo");
     estadoApp.usuarios = esAdmin ? snapUsuarios.docs.map(d => ({ id: d.id, ...d.data() })) : [];
   } catch (err) {
     estadoApp.posts = [];
     estadoApp.notas = [];
+    estadoApp.modelos = [];
     estadoApp.usuarios = [];
     if (elError) {
       elError.textContent = "No se pudieron cargar los datos. Intenta de nuevo (botón Recargar) o avisa a Malthus si sigue pasando.";
@@ -1920,8 +1928,11 @@ function renderDia() {
           <select id="nota-repite" aria-label="Repetir"><option value="no">No se repite</option><option value="semana">Cada semana</option><option value="mes">Cada mes</option></select>
           <select id="nota-veces" aria-label="Veces">${[2, 3, 4, 6, 8, 12].map(n => `<option value="${n}">${n} veces</option>`).join("")}</select>
         </div>
+        <label class="fila-check"><input type="checkbox" id="nota-reusable" /> Guardar en mi lista de notas reutilizables</label>
         <button type="submit" class="btn-primario" id="nota-agregar">Agregar nota</button>
       </form>
+      ${estadoApp.modelos.length ? `<div class="modelos-notas"><p class="hint">Mi lista (toca una para agregarla a este día):</p>
+        ${estadoApp.modelos.map(m => `<span class="modelo-nota"><button type="button" class="modelo-usar" data-id="${escapeHtml(m.id)}" title="Agregar esta nota a este día">＋ ${escapeHtml((m.copy || m.titulo || "").slice(0, 40))}</button><button type="button" class="modelo-quitar" data-id="${escapeHtml(m.id)}" aria-label="Quitar de la lista">✕</button></span>`).join("")}</div>` : ""}
     </section>`;
   contenedor.innerHTML = html;
 
@@ -1929,13 +1940,22 @@ function renderDia() {
     hacerActivable(el, "Abrir publicación: " + (el.dataset.titulo || ""), () => abrirModal(el.dataset.id));
   });
   document.getElementById("form-nota").addEventListener("submit", agregarNota);
+  contenedor.querySelectorAll(".modelo-usar").forEach(b => b.addEventListener("click", () => {
+    const m = estadoApp.modelos.find(x => x.id === b.dataset.id);
+    if (m) crearNotas(m.copy || m.titulo || "", false);
+  }));
+  contenedor.querySelectorAll(".modelo-quitar").forEach(b => b.addEventListener("click", () => quitarModelo(b.dataset.id)));
   contenedor.querySelectorAll(".nota-borrar").forEach(b => b.addEventListener("click", () => borrarNota(b.dataset.id)));
 }
 
-async function agregarNota(e) {
+function agregarNota(e) {
   e.preventDefault();
   const texto = document.getElementById("nota-nueva").value.trim();
-  if (!texto) return;
+  if (texto) crearNotas(texto, document.getElementById("nota-reusable").checked);
+}
+
+// Crea la(s) nota(s) del día en pantalla; con `guardarEnLista` también la deja en la lista reutilizable.
+async function crearNotas(texto, guardarEnLista) {
   const boton = document.getElementById("nota-agregar");
   boton.disabled = true;
   const dia = _inicioDia(estadoApp.fechaAncla);
@@ -1955,12 +1975,30 @@ async function agregarNota(e) {
       const ref = await addDoc(collection(db, "posts"), datos);
       estadoApp.notas.push({ id: ref.id, ...datos });
     }
+    if (guardarEnLista) {
+      const modelo = { tipo: "nota_modelo", titulo: texto.slice(0, 80), copy: texto, plataformas: [], estado: "por_disenar", fechaProgramada: null,
+        notas: "", fuente: "Nota reutilizable", destacado: false, imagenUrl: "", imagenStoragePath: "",
+        creadoEn: ahora, actualizadoEn: ahora, creadoPor: "calendario", ultimoEditor: estadoApp.usuarioUid, agencia: AGENCIA };
+      const ref = await addDoc(collection(db, "posts"), modelo);
+      estadoApp.modelos.push({ id: ref.id, ...modelo });
+    }
   } catch (err) {
     console.error("Error al guardar la nota:", err);
     alert("No se guardó la nota: " + mensajeErrorFirestore(err));
     boton.disabled = false;
     return;
   }
+  render();
+}
+
+async function quitarModelo(id) {
+  try {
+    await updateDoc(doc(db, "posts", id), { eliminada: true, actualizadoEn: serverTimestamp(), ultimoEditor: estadoApp.usuarioUid });
+  } catch (err) {
+    alert("No se quitó de la lista: " + mensajeErrorFirestore(err));
+    return;
+  }
+  estadoApp.modelos = estadoApp.modelos.filter(m => m.id !== id);
   render();
 }
 
