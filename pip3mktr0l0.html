@@ -598,6 +598,15 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .av-lista b { display: inline-block; min-width: 76px; text-transform: uppercase; font-size: .7rem; }
 .av-verificado b { color: #1a7f37; } .av-hecho b { color: #9a6700; } .av-parcial b, .av-pendiente b { color: #C41E25; }
 
+/* Identificadores de tipo y de historia / reel */
+.ico-tipo { font-size: 12px; line-height: 1; flex: none; }
+.marca { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 3px; margin-left: 3px;
+  font-size: 10px; font-weight: 800; border-radius: 4px; border: 1.5px solid currentColor; background: transparent; flex: none; }
+.marca.hecha { background: currentColor; }
+.marca.hecha { color: inherit; }
+.chip-post .marca.hecha { background: rgba(255,255,255,0.85); color: #222; border-color: rgba(255,255,255,0.85); }
+.resumen-tipos { margin-top: 8px; font-size: 13px; font-weight: 700; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+
 </style>
 </head>
 <body>
@@ -713,6 +722,12 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
         </details>
         <label>Notas internas
           <textarea id="campo-notas" rows="2"></textarea>
+        </label>
+        <label class="fila-check">
+          <input type="checkbox" id="campo-lleva-historia" /> Lleva historia
+        </label>
+        <label class="fila-check">
+          <input type="checkbox" id="campo-lleva-reel" /> Lleva reel
         </label>
         <label class="fila-check">
           <input type="checkbox" id="campo-destacado" />
@@ -1107,8 +1122,13 @@ function metasSemana(posts, ref = new Date(), plan = PLAN) {
 // ------------------------------------------------------------- historias
 // Una historia por PROMOCIÓN: se republica el flyer el mismo día, un rato después del post de
 // Instagram y siempre dentro de la ventana (tope 20:00). Se calcula al vuelo, no se guarda.
+// ¿Lleva historia / reel? Lo decide la persona (casillas del modal); si no lo decidió, según el tipo:
+// promoción -> historia, video -> reel, tip -> ninguno.
+function llevaHistoria(post) { return post.llevaHistoria !== undefined ? post.llevaHistoria === true : tipoDe(post) === "promo"; }
+function llevaReel(post) { return post.llevaReel !== undefined ? post.llevaReel === true : tipoDe(post) === "video"; }
+
 function historiaDe(post, plan = PLAN) {
-  if (tipoDe(post) !== "promo") return null;
+  if (!llevaHistoria(post)) return null;
   const base = _aFecha(post.horarios && post.horarios.instagram) || _aFecha(post.fechaProgramada);
   if (!base) return null;
   const tope = _enMinutos(base, plan.ventana.fin);
@@ -1116,6 +1136,25 @@ function historiaDe(post, plan = PLAN) {
   if (t > tope) t = tope;
   if (t <= base) t = new Date(base.getTime() + 15 * 60000);
   return t;
+}
+
+// Reel de un post que NO es video (el video ya es el reel: sus acciones son las del feed): sale 45 min
+// después de Instagram, sin pasar de las 20:00.
+function reelDe(post, plan = PLAN) {
+  if (tipoDe(post) === "video" || !llevaReel(post)) return null;
+  const base = _aFecha(post.horarios && post.horarios.instagram) || _aFecha(post.fechaProgramada);
+  if (!base) return null;
+  const tope = _enMinutos(base, plan.ventana.fin);
+  const t = new Date(base.getTime() + 45 * 60000);
+  return t > tope ? tope : t;
+}
+// ¿Todo lo de historia / reel de esta publicación está hecho? null = no lleva.
+function estadoMarca(post, cual) {
+  const redes = redesDeHistoria(post);
+  if (cual === "historia") return llevaHistoria(post) ? redes.length > 0 && redes.every(r => historiaHechaDe(post, r)) : null;
+  if (!llevaReel(post)) return null;
+  if (tipoDe(post) === "video") return redes.length > 0 && redes.every(r => (post.hechas || {})[r] === true || post.estado === "publicada");
+  return redes.length > 0 && redes.every(r => (post.reelsHechos || {})[r] === true);
 }
 
 // Redes donde se republica la historia: las de feed que la publicación usa (WhatsApp queda fuera).
@@ -1145,10 +1184,12 @@ function accionesDelDia(posts, dia, ahora = new Date()) {
       if (_clave(hora) !== k) return;
       out.push({ postId: p.id, tipoPost: tipoDe(p), clase: "feed", red: r, hora, hecha: hechas[r] === true || p.estado === "publicada", auto: (p.hechasAuto || {})[r] === true });
     });
+    const rl = reelDe(p);
+    if (rl && _clave(rl) === k) redesDeHistoria(p).forEach(r => out.push({ postId: p.id, tipoPost: tipoDe(p), clase: "reel", red: r, hora: rl, hecha: (p.reelsHechos || {})[r] === true }));
     const h = historiaDe(p);
     if (h && _clave(h) === k) redesDeHistoria(p).forEach(r => out.push({ postId: p.id, tipoPost: tipoDe(p), clase: "historia", red: r, hora: h, hecha: historiaHechaDe(p, r) }));
   });
-  out.sort((a, b) => a.hora - b.hora || (a.clase === "historia") - (b.clase === "historia") || REDES_PLAN.indexOf(a.red) - REDES_PLAN.indexOf(b.red));
+  out.sort((a, b) => a.hora - b.hora || (a.clase !== "feed") - (b.clase !== "feed") || REDES_PLAN.indexOf(a.red) - REDES_PLAN.indexOf(b.red));
   out.forEach(a => { a.vencida = !a.hecha && new Date(a.hora.getTime() + 60 * 60000) < ahora; });
   return out;
 }
@@ -1681,7 +1722,7 @@ function renderMes() {
       ESTADOS.findIndex(e => e.id === x.estado) - ESTADOS.findIndex(e => e.id === y.estado));
     const chips = ordenados.slice(0, 2).map(p => {
       const e = estadoInfo(p.estado);
-      return `<div class="chip-post ${esAtrasada(p) ? "atrasada" : ""} ${sugerenciaDe(p) ? "sugerida" : ""}" style="${varsEtapa(e)}">${icoEtapa(e)}<span class="chip-txt">${escapeHtml(p.titulo || "(sin título)")}</span></div>`;
+      return `<div class="chip-post ${esAtrasada(p) ? "atrasada" : ""} ${sugerenciaDe(p) ? "sugerida" : ""}" style="${varsEtapa(e)}">${icoEtapa(e)}${iconoTipoHtml(p)}<span class="chip-txt">${escapeHtml(p.titulo || "(sin título)")}</span>${marcasHtml(p)}</div>`;
     }).join("");
     const mas = posts.length > 2 ? `<div class="chips-mas">+${posts.length - 2} más</div>` : "";
 
@@ -1717,6 +1758,17 @@ function renderMes() {
 // ---------------------------------------------------------------------------
 // VISTA SEMANA — un paso intermedio de detalle: conteos por etapa por día
 // ---------------------------------------------------------------------------
+// Debajo de las etapas de cada día de la semana: cuántas de cada tipo hay y cuántas historias / reels faltan.
+function resumenTiposHtml(posts) {
+  if (!posts.length) return "";
+  const n = { promo: 0, tip: 0, video: 0 };
+  posts.forEach(p => n[tipoDe(p)]++);
+  const faltan = cual => posts.filter(p => estadoMarca(p, cual) === false).length;
+  const tipos = ["promo", "tip", "video"].filter(t => n[t]).map(t => `<span title="${NOMBRE_TIPO[t]}">${ICONO_TIPO[t]}${n[t]}</span>`).join(" ");
+  const pend = [["historia", "H", "historias"], ["reel", "R", "reels"]].map(([c, l, nombre]) => faltan(c) ? `<span class="marca" title="Faltan ${faltan(c)} ${nombre}">${l}${faltan(c)}</span>` : "").join("");
+  return `<div class="resumen-tipos">${tipos} ${pend}</div>`;
+}
+
 function renderSemana() {
   const inicio = inicioDeSemana(estadoApp.fechaAncla);
   const hoy = new Date();
@@ -1741,6 +1793,7 @@ function renderSemana() {
       <div class="columna-semana ${esHoy ? "hoy" : ""}" data-fecha="${dia.toISOString()}">
         <div class="columna-semana-header">${NOMBRES_DIA_CORTO[dia.getDay()]} ${dia.getDate()}</div>
         <div class="mini-pila">${pills || '<p class="tarjeta-vacio">Sin actividad</p>'}</div>
+        ${resumenTiposHtml(posts)}
       </div>`;
   }
   html += `</div>`;
@@ -1785,6 +1838,22 @@ function renderDia() {
 // URI esperado (nunca una URL remota, ni algo como "javascript:...").
 const PREFIJO_IMAGEN_VALIDO = "data:image/jpeg;base64,";
 
+// Identificadores de las tarjetas: el ÍCONO dice el tipo (el color ya es de la etapa) y «H» / «R» dicen
+// si lleva historia / reel: rellena = ya está hecha, solo contorno = falta.
+const ICONO_TIPO = { promo: "🏷️", tip: "💡", video: "🎬" };
+const NOMBRE_TIPO = { promo: "Promoción", tip: "Tip", video: "Video" };
+function iconoTipoHtml(post) {
+  const t = tipoDe(post);
+  return `<span class="ico-tipo" title="${NOMBRE_TIPO[t]}" aria-label="${NOMBRE_TIPO[t]}">${ICONO_TIPO[t]}</span>`;
+}
+function marcasHtml(post) {
+  return [["historia", "H", "Historia"], ["reel", "R", "Reel"]].map(([cual, letra, nombre]) => {
+    const hecho = estadoMarca(post, cual);
+    if (hecho === null) return "";
+    return `<span class="marca ${hecho ? "hecha" : ""}" title="${nombre}: ${hecho ? "publicada" : "pendiente"}" aria-label="${nombre}: ${hecho ? "publicada" : "pendiente"}">${letra}</span>`;
+  }).join("");
+}
+
 function tarjetaHtml(post, color) {
   const atrasada = esAtrasada(post);
   const hora = post.fechaProgramada
@@ -1795,9 +1864,9 @@ function tarjetaHtml(post, color) {
   return `
     <div class="tarjeta-post ${atrasada ? "atrasada" : ""} ${sugerenciaDe(post) ? "sugerida" : ""}" style="--linea:${color}" data-id="${escapeHtml(post.id)}" data-titulo="${escapeHtml(post.titulo || "(sin título)")}">
       ${imagenValida ? `<img src="${escapeHtml(post.imagenUrl)}" alt="" />` : ""}
-      <div class="titulo">${escapeHtml(post.titulo || "(sin título)")}</div>
+      <div class="titulo">${iconoTipoHtml(post)} ${escapeHtml(post.titulo || "(sin título)")} ${marcasHtml(post)}</div>
       <div class="meta">
-        <span>${escapeHtml(plataformasTexto)}${Number(post.laminas) > 1 ? " · Carrusel de " + Number(post.laminas) : ""}</span>
+        <span>${NOMBRE_TIPO[tipoDe(post)]} · ${escapeHtml(plataformasTexto)}${Number(post.laminas) > 1 ? " · Carrusel de " + Number(post.laminas) : ""}</span>
         <span>${escapeHtml(hora)}</span>
       </div>
       ${atrasada ? '<div class="etiqueta-atrasada-mini">⚠ Atrasada</div>' : ""}
@@ -1838,6 +1907,8 @@ function abrirModal(postId) {
   document.getElementById("vigencia-nota").textContent =
     vig && vig.detectada ? "Detectada en el texto: cámbiala o bórrala si no es correcta." : "";
   renderBloquesRedes(post);
+  document.getElementById("campo-lleva-historia").checked = llevaHistoria(post);
+  document.getElementById("campo-lleva-reel").checked = llevaReel(post);
   etiquetasPublicado();
   // Publicación sin fecha: se precargan los horarios SUGERIDOS (fecha, hora y cada red) y se
   // marcan Instagram, Facebook y TikTok; se guardan al pulsar Guardar (o «Aceptar» en Sugerencias).
@@ -1975,8 +2046,13 @@ async function guardarPublicacion() {
     else if (previas[r] === true) hechas[r] = false;
   });
   cambios.hechas = hechas;
-  if (REDES_HISTORIA.some(r => !document.getElementById("fila-historia-" + r).hidden)) {
+  cambios.llevaHistoria = document.getElementById("campo-lleva-historia").checked;
+  cambios.llevaReel = document.getElementById("campo-lleva-reel").checked;
+  if (cambios.llevaHistoria) {
     cambios.historiasHechas = Object.fromEntries(REDES_HISTORIA.map(r => [r, document.getElementById("historia-" + r).checked]));
+  }
+  if (cambios.llevaReel && cambios.tipo !== "video") {
+    cambios.reelsHechos = Object.fromEntries(REDES_HISTORIA.map(r => [r, document.getElementById("reel-" + r).checked]));
   }
   Object.assign(cambios, avanceDeEstado(post, hechas, horarios, cambios.plataformas));
   // Vigencia: solo se guarda si la persona la cambió (así una detectada del texto no se
@@ -2208,9 +2284,23 @@ function valorDateTimeLocal(ts) {
 // En un video, la casilla de cada red es la del reel de esa red.
 function etiquetasPublicado() {
   const esVideo = document.getElementById("campo-tipo").value === "video";
-  REDES_PLAN.forEach(r => { document.getElementById("hecha-txt-" + r).textContent = esVideo ? "Reel" : "Publicado"; });
+  const reel = document.getElementById("campo-lleva-reel").checked;
+  const historia = document.getElementById("campo-lleva-historia").checked;
+  REDES_PLAN.forEach(r => {
+    document.getElementById("hecha-txt-" + r).textContent = esVideo && reel ? "Reel" : "Publicado";
+    document.getElementById("fila-historia-" + r).hidden = !(historia && REDES_HISTORIA.includes(r));
+    document.getElementById("fila-reel-" + r).hidden = !(reel && !esVideo && REDES_HISTORIA.includes(r));
+  });
 }
-document.getElementById("campo-tipo").addEventListener("change", etiquetasPublicado);
+// Al cambiar el tipo, las casillas «lleva historia / reel» toman el valor por defecto de ese tipo.
+document.getElementById("campo-tipo").addEventListener("change", () => {
+  const t = document.getElementById("campo-tipo").value;
+  document.getElementById("campo-lleva-historia").checked = t === "promo";
+  document.getElementById("campo-lleva-reel").checked = t === "video";
+  etiquetasPublicado();
+});
+document.getElementById("campo-lleva-historia").addEventListener("change", etiquetasPublicado);
+document.getElementById("campo-lleva-reel").addEventListener("change", etiquetasPublicado);
 
 // Un cuadro por red con su horario y su botón Copiar. El texto sale de `post.textos` (lo que se
 // editó aquí) o, si no hay, de las secciones del copy que manda MiRebranda.
@@ -2225,6 +2315,7 @@ function renderBloquesRedes(post) {
         <input type="datetime-local" id="hr-${r}" class="red-hora" aria-label="Horario en ${NOMBRE_RED[r]}" />
         <label class="red-hecha"><input type="checkbox" id="hecha-${r}" /> <span id="hecha-txt-${r}">Publicado</span></label>
         <label class="red-hecha" id="fila-historia-${r}" hidden><input type="checkbox" id="historia-${r}" /> Historia</label>
+        <label class="red-hecha" id="fila-reel-${r}" hidden><input type="checkbox" id="reel-${r}" /> Reel</label>
         <button type="button" class="btn-copiar" data-red="${r}" aria-label="Copiar el texto de ${NOMBRE_RED[r]}">Copiar</button>
       </div>
       <textarea id="tx-${r}" rows="5" aria-label="Texto para ${NOMBRE_RED[r]}"></textarea>
@@ -2241,9 +2332,8 @@ function renderBloquesRedes(post) {
     document.getElementById("tx-" + r).value = textosPost[r] || "";
     document.getElementById("hr-" + r).value = valorDateTimeLocal(horarios[r]);
     document.getElementById("hecha-" + r).checked = (post.hechas || {})[r] === true;
-    const conHistoria = !!historiaDe(post) && REDES_HISTORIA.includes(r);
-    document.getElementById("fila-historia-" + r).hidden = !conHistoria;
-    document.getElementById("historia-" + r).checked = conHistoria && historiaHechaDe(post, r);
+    document.getElementById("historia-" + r).checked = historiaHechaDe(post, r);
+    document.getElementById("reel-" + r).checked = (post.reelsHechos || {})[r] === true;
   });
   document.getElementById("tx-guion").value = textosPost.guion || "";
   cont.querySelectorAll(".btn-copiar[data-red]").forEach(btn => btn.addEventListener("click", () => copiarTextoDeRed(btn)));
@@ -2366,6 +2456,8 @@ async function marcarAccion(postId, clase, red, valor) {
     const previas = post.historiasHechas !== undefined ? (post.historiasHechas || {})
       : Object.fromEntries(redesDeHistoria(post).map(r => [r, post.historiaHecha === true]));
     cambios.historiasHechas = { ...previas, [red]: valor };
+  } else if (clase === "reel") {
+    cambios.reelsHechos = { ...(post.reelsHechos || {}), [red]: valor };
   } else {
     const hechas = { ...(post.hechas || {}), [red]: valor };
     cambios.hechas = hechas;
@@ -2394,9 +2486,9 @@ function renderAgenda() {
 
   const filas = acciones.map((a, i) => {
     const p = estadoApp.posts.find(x => x.id === a.postId);
-    const esHistoria = a.clase === "historia";
-    const etiqueta = esHistoria ? `Historia de ${NOMBRE_RED[a.red]}` : (a.tipoPost === "video" ? `Reel de ${NOMBRE_RED[a.red]}` : NOMBRE_RED[a.red]);
-    const nota = esHistoria ? "Republica el flyer en historias (usa la versión vertical de MiRebranda)." : "";
+    const esHistoria = a.clase !== "feed";
+    const etiqueta = a.clase === "historia" ? `Historia de ${NOMBRE_RED[a.red]}` : a.clase === "reel" ? `Reel de ${NOMBRE_RED[a.red]}` : (a.tipoPost === "video" && llevaReel(p) ? `Reel de ${NOMBRE_RED[a.red]}` : NOMBRE_RED[a.red]);
+    const nota = a.clase === "historia" ? "Republica el flyer en historias (usa la versión vertical de MiRebranda)." : a.clase === "reel" ? "Publica el reel de esta publicación." : "";
     const botones = [];
     if (!esHistoria) {
       botones.push(`<button type="button" class="btn-copiar accion-copiar" data-id="${escapeHtml(a.postId)}" data-red="${a.red}">Copiar texto</button>`);
