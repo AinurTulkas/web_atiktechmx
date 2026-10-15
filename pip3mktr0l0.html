@@ -612,6 +612,15 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .filtro-tipo { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; cursor: pointer; border: 1.5px solid currentColor; background: transparent; color: inherit; }
 .filtro-tipo[aria-pressed="false"] { opacity: 0.45; text-decoration: line-through; }
 
+/* Notas del día */
+.nota-mini { font-size: 11px; font-weight: 600; color: var(--ink-muted); padding-left: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notas-dia { margin-top: 18px; padding: 14px; border-radius: 12px; border: 1.5px dashed var(--ink-muted); }
+.notas-dia h3 { margin: 0 0 8px; }
+.nota-fila { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid rgba(128,128,128,0.25); }
+.nota-texto { flex: 1; white-space: pre-wrap; overflow-wrap: anywhere; }
+.nota-borrar { flex: none; cursor: pointer; }
+.form-nota { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+
 </style>
 </head>
 <body>
@@ -1402,6 +1411,7 @@ const estadoApp = {
   usuarios: [],    // arreglo de {id, ...datos}
   vista: "mes",    // 'mes' | 'semana' | 'dia'
   fechaAncla: new Date(),
+  notas: [],   // notas de día (posts con tipo "nota"): ideas sueltas, sin publicación
   filtroTipos: new Set(["promo", "tip", "video"]),   // tipos que se ven en el mes, la semana y el día
   postSeleccionado: null,
 };
@@ -1534,10 +1544,15 @@ async function cargarDatos() {
       getDocs(query(collection(db, "posts"), where("agencia", "==", AGENCIA))),
       esAdmin ? getDocs(collection(db, "usuarios")) : Promise.resolve(null),
     ]);
-    estadoApp.posts = snapPosts.docs.map(d => ({ id: d.id, ...d.data() }));
+    const todos = snapPosts.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Las notas de día viven en la misma colección pero NO son publicaciones: se separan aquí para que
+    // no entren en conteos, metas, sugerencias ni agenda.
+    estadoApp.notas = todos.filter(p => p.tipo === "nota" && !p.eliminada);
+    estadoApp.posts = todos.filter(p => p.tipo !== "nota");
     estadoApp.usuarios = esAdmin ? snapUsuarios.docs.map(d => ({ id: d.id, ...d.data() })) : [];
   } catch (err) {
     estadoApp.posts = [];
+    estadoApp.notas = [];
     estadoApp.usuarios = [];
     if (elError) {
       elError.textContent = "No se pudieron cargar los datos. Intenta de nuevo (botón Recargar) o avisa a Malthus si sigue pasando.";
@@ -1613,6 +1628,17 @@ function mismoDia(a, b) {
   return a.getFullYear() === b.getFullYear() &&
          a.getMonth() === b.getMonth() &&
          a.getDate() === b.getDate();
+}
+
+function notasDelDia(fecha) {
+  return estadoApp.notas.filter(n => n.fechaProgramada && mismoDia(n.fechaProgramada.toDate(), fecha));
+}
+// Resumen de notas para el mes: la primera nota recortada, o cuántas hay.
+function notasMiniHtml(fecha) {
+  const ns = notasDelDia(fecha);
+  if (!ns.length) return "";
+  const txt = ns.length === 1 ? ns[0].copy || ns[0].titulo || "" : ns.length + " notas";
+  return `<div class="nota-mini" title="${escapeHtml(ns.map(n => n.copy || n.titulo).join(" | "))}">📝 ${escapeHtml(txt.length > 24 ? txt.slice(0, 24) + "…" : txt)}</div>`;
 }
 
 function postsDelDia(fecha) {
@@ -1780,7 +1806,7 @@ function renderMes() {
     html += `
       <div class="celda-mes ${fueraDeMes ? "fuera-mes" : ""} ${esHoy ? "hoy" : ""}" data-fecha="${dia.toISOString()}" data-etiqueta="${escapeHtml(etiqueta)}">
         <div class="celda-num">${dia.getDate()}${tiposDelDiaHtml(posts)}</div>
-        <div class="chips-mes">${chips}${mas}</div>
+        <div class="chips-mes">${chips}${mas}${notasMiniHtml(dia)}</div>
         <div class="insignias-mes">${insignias}</div>
       </div>`;
   }
@@ -1838,6 +1864,7 @@ function renderSemana() {
         <div class="columna-semana-header">${NOMBRES_DIA_CORTO[dia.getDay()]} ${dia.getDate()}</div>
         <div class="mini-pila">${pills || '<p class="tarjeta-vacio">Sin actividad</p>'}</div>
         ${resumenTiposHtml(posts)}
+        ${notasDelDia(dia).length ? `<div class="resumen-tipos" title="Notas del día">📝${notasDelDia(dia).length}</div>` : ""}
       </div>`;
   }
   html += `</div>`;
@@ -1869,11 +1896,64 @@ function renderDia() {
       </div>`;
   });
   html += `</div>`;
+  const notas = notasDelDia(estadoApp.fechaAncla);
+  html += `<section class="notas-dia" aria-label="Notas del día">
+      <h3>📝 Notas del día</h3>
+      ${notas.map(n => `<div class="nota-fila"><span class="nota-texto">${escapeHtml(n.copy || n.titulo || "")}</span>
+        <button type="button" class="nota-borrar" data-id="${escapeHtml(n.id)}" aria-label="Borrar nota">✕</button></div>`).join("") || '<p class="tarjeta-vacio">Sin notas. Apunta aquí ideas para este día.</p>'}
+      <form id="form-nota" class="form-nota">
+        <textarea id="nota-nueva" rows="2" maxlength="2000" placeholder="Idea o recordatorio para este día…" required></textarea>
+        <button type="submit" class="btn-primario" id="nota-agregar">Agregar nota</button>
+      </form>
+    </section>`;
   contenedor.innerHTML = html;
 
   contenedor.querySelectorAll(".tarjeta-post").forEach(el => {
     hacerActivable(el, "Abrir publicación: " + (el.dataset.titulo || ""), () => abrirModal(el.dataset.id));
   });
+  document.getElementById("form-nota").addEventListener("submit", agregarNota);
+  contenedor.querySelectorAll(".nota-borrar").forEach(b => b.addEventListener("click", () => borrarNota(b.dataset.id)));
+}
+
+async function agregarNota(e) {
+  e.preventDefault();
+  const texto = document.getElementById("nota-nueva").value.trim();
+  if (!texto) return;
+  const boton = document.getElementById("nota-agregar");
+  boton.disabled = true;
+  const dia = _inicioDia(estadoApp.fechaAncla);
+  const ahora = Timestamp.now();
+  const datos = {
+    tipo: "nota", titulo: texto.slice(0, 80), copy: texto, plataformas: [], estado: "por_disenar",
+    fechaProgramada: Timestamp.fromDate(new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), 12, 0)),
+    notas: "", fuente: "Nota", destacado: false, imagenUrl: "", imagenStoragePath: "",
+    creadoEn: ahora, actualizadoEn: ahora, creadoPor: "calendario", ultimoEditor: estadoApp.usuarioUid, agencia: AGENCIA,
+  };
+  try {
+    const ref = await addDoc(collection(db, "posts"), datos);
+    estadoApp.notas.push({ id: ref.id, ...datos });
+  } catch (err) {
+    console.error("Error al guardar la nota:", err);
+    alert("No se guardó la nota: " + mensajeErrorFirestore(err));
+    boton.disabled = false;
+    return;
+  }
+  render();
+}
+
+// Se marca como eliminada (no se borra el documento: quien no es admin no puede borrar en Firestore).
+async function borrarNota(id) {
+  const nota = estadoApp.notas.find(n => n.id === id);
+  if (!nota || !confirm("¿Borrar esta nota?")) return;
+  try {
+    await updateDoc(doc(db, "posts", id), { eliminada: true, actualizadoEn: serverTimestamp(), ultimoEditor: estadoApp.usuarioUid });
+  } catch (err) {
+    console.error("Error al borrar la nota:", err);
+    alert("No se borró la nota: " + mensajeErrorFirestore(err));
+    return;
+  }
+  estadoApp.notas = estadoApp.notas.filter(n => n.id !== id);
+  render();
 }
 
 // post.imagenUrl y post.plataformas vienen de Firestore (los escribe
