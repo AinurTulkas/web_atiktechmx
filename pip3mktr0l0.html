@@ -607,6 +607,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .chip-post .marca.hecha { background: rgba(255,255,255,0.85); color: #222; border-color: rgba(255,255,255,0.85); }
 .resumen-tipos { margin-top: 8px; font-size: 13px; font-weight: 700; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 
+.ico-vence { font-size: 12px; margin-left: 3px; flex: none; }
+.tipos-dia { margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--ink-muted); }
+.filtro-tipo { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; cursor: pointer; border: 1.5px solid currentColor; background: transparent; color: inherit; }
+.filtro-tipo[aria-pressed="false"] { opacity: 0.45; text-decoration: line-through; }
+
 </style>
 </head>
 <body>
@@ -1375,6 +1380,7 @@ const estadoApp = {
   usuarios: [],    // arreglo de {id, ...datos}
   vista: "mes",    // 'mes' | 'semana' | 'dia'
   fechaAncla: new Date(),
+  filtroTipos: new Set(["promo", "tip", "video"]),   // tipos que se ven en el mes, la semana y el día
   postSeleccionado: null,
 };
 
@@ -1588,7 +1594,7 @@ function mismoDia(a, b) {
 }
 
 function postsDelDia(fecha) {
-  return estadoApp.posts.filter(p => mismoDia(fechaDelPost(p), fecha));
+  return estadoApp.posts.filter(p => estadoApp.filtroTipos.has(tipoDe(p)) && mismoDia(fechaDelPost(p), fecha));
 }
 
 const NOMBRES_MES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -1657,7 +1663,16 @@ function renderLeyenda() {
   if (!el) return;
   el.innerHTML = ESTADOS.map(e =>
     `<span class="leyenda-item" style="${varsEtapa(e)}">${icoEtapa(e)}${e.label}</span>`
-  ).join("") + `<span class="leyenda-item"><span aria-hidden="true">⚠</span> Atrasada (contorno rojo)</span>`;
+  ).join("") + `<span class="leyenda-item"><span aria-hidden="true">⚠</span> Atrasada (contorno rojo)</span>` +
+    ["promo", "tip", "video"].map(t =>
+      `<button type="button" class="filtro-tipo" data-tipo="${t}" aria-pressed="${estadoApp.filtroTipos.has(t)}" title="Mostrar u ocultar: ${NOMBRE_TIPO[t]}s">${ICONO_TIPO[t]} ${NOMBRE_TIPO[t]}s</button>`
+    ).join("");
+  el.querySelectorAll(".filtro-tipo").forEach(b => b.addEventListener("click", () => {
+    const t = b.dataset.tipo;
+    if (estadoApp.filtroTipos.has(t)) estadoApp.filtroTipos.delete(t); else estadoApp.filtroTipos.add(t);
+    if (!estadoApp.filtroTipos.size) estadoApp.filtroTipos.add(t);   // nunca todos apagados
+    render();
+  }));
 }
 
 // Un elemento que no es <button> pero se puede abrir con clic debe poder
@@ -1742,7 +1757,7 @@ function renderMes() {
 
     html += `
       <div class="celda-mes ${fueraDeMes ? "fuera-mes" : ""} ${esHoy ? "hoy" : ""}" data-fecha="${dia.toISOString()}" data-etiqueta="${escapeHtml(etiqueta)}">
-        <div class="celda-num">${dia.getDate()}</div>
+        <div class="celda-num">${dia.getDate()}${tiposDelDiaHtml(posts)}</div>
         <div class="chips-mes">${chips}${mas}</div>
         <div class="insignias-mes">${insignias}</div>
       </div>`;
@@ -1759,6 +1774,13 @@ function renderMes() {
 // VISTA SEMANA — un paso intermedio de detalle: conteos por etapa por día
 // ---------------------------------------------------------------------------
 // Debajo de las etapas de cada día de la semana: cuántas de cada tipo hay y cuántas historias / reels faltan.
+function tiposDelDiaHtml(posts) {
+  if (!posts.length) return "";
+  const n = { promo: 0, tip: 0, video: 0 };
+  posts.forEach(p => n[tipoDe(p)]++);
+  return `<span class="tipos-dia" aria-hidden="true">${["promo", "tip", "video"].filter(t => n[t]).map(t => ICONO_TIPO[t] + n[t]).join(" ")}</span>`;
+}
+
 function resumenTiposHtml(posts) {
   if (!posts.length) return "";
   const n = { promo: 0, tip: 0, video: 0 };
@@ -1846,8 +1868,17 @@ function iconoTipoHtml(post) {
   const t = tipoDe(post);
   return `<span class="ico-tipo" title="${NOMBRE_TIPO[t]}" aria-label="${NOMBRE_TIPO[t]}">${ICONO_TIPO[t]}</span>`;
 }
+// ⏳ si la promoción vence en los próximos 3 días (y sigue sin publicarse): no puede esperar.
+function venceProntoHtml(post) {
+  const vig = post.estado === "publicada" ? null : vigenciaDe(post, new Date());
+  if (!vig) return "";
+  const dias = Math.ceil((vig.fecha.getTime() - Date.now()) / 86400000);
+  if (dias < 0 || dias > 3) return "";
+  const texto = "Vence el " + _fechaCorta(vig.fecha);
+  return `<span class="ico-vence" title="${texto}" aria-label="${texto}">⏳</span>`;
+}
 function marcasHtml(post) {
-  return [["historia", "H", "Historia"], ["reel", "R", "Reel"]].map(([cual, letra, nombre]) => {
+  return venceProntoHtml(post) + [["historia", "H", "Historia"], ["reel", "R", "Reel"]].map(([cual, letra, nombre]) => {
     const hecho = estadoMarca(post, cual);
     if (hecho === null) return "";
     return `<span class="marca ${hecho ? "hecha" : ""}" title="${nombre}: ${hecho ? "publicada" : "pendiente"}" aria-label="${nombre}: ${hecho ? "publicada" : "pendiente"}">${letra}</span>`;
