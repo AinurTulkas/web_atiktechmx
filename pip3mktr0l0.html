@@ -612,14 +612,20 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 .filtro-tipo { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; cursor: pointer; border: 1.5px solid currentColor; background: transparent; color: inherit; }
 .filtro-tipo[aria-pressed="false"] { opacity: 0.45; text-decoration: line-through; }
 
-/* Notas del día */
-.nota-mini { font-size: 11px; font-weight: 600; color: var(--ink-muted); padding-left: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.notas-dia { margin-top: 18px; padding: 14px; border-radius: 12px; border: 1.5px dashed var(--ink-muted); }
+/* Notas del día: post-it */
+.postit { background: #fff176; color: #3a3200; border-radius: 2px; padding: 4px 7px; font-size: 11px; font-weight: 600; line-height: 1.25;
+  box-shadow: 1px 2px 4px rgba(0,0,0,0.35); transform: rotate(-1deg); overflow-wrap: anywhere; }
+.postit:nth-child(even) { transform: rotate(1deg); background: #ffd54f; }
+.nota-mini { margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notas-semana { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.notas-dia { margin-top: 18px; padding: 12px; border-radius: 12px; border: 1.5px dashed var(--ink-muted); max-width: 380px; }
 .notas-dia h3 { margin: 0 0 8px; }
-.nota-fila { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid rgba(128,128,128,0.25); }
-.nota-texto { flex: 1; white-space: pre-wrap; overflow-wrap: anywhere; }
-.nota-borrar { flex: none; cursor: pointer; }
-.form-nota { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.notas-postits { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+.postit-grande { font-size: 13px; width: 160px; min-height: 70px; padding: 8px 22px 8px 9px; position: relative; }
+.postit-grande .nota-borrar { position: absolute; top: 2px; right: 3px; cursor: pointer; background: transparent; border: 0; color: inherit; font-size: 12px; padding: 0 2px; }
+.nota-texto { white-space: pre-wrap; }
+.form-nota { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.nota-repite { display: flex; gap: 6px; }
 
 </style>
 </head>
@@ -1638,7 +1644,14 @@ function notasMiniHtml(fecha) {
   const ns = notasDelDia(fecha);
   if (!ns.length) return "";
   const txt = ns.length === 1 ? ns[0].copy || ns[0].titulo || "" : ns.length + " notas";
-  return `<div class="nota-mini" title="${escapeHtml(ns.map(n => n.copy || n.titulo).join(" | "))}">📝 ${escapeHtml(txt.length > 24 ? txt.slice(0, 24) + "…" : txt)}</div>`;
+  return `<div class="nota-mini postit" title="${escapeHtml(ns.map(n => n.copy || n.titulo).join(" | "))}">${escapeHtml(txt.length > 24 ? txt.slice(0, 24) + "…" : txt)}</div>`;
+}
+// Semana: lo que dice cada nota, como post-it sobre su día (hasta 3).
+function notasSemanaHtml(fecha) {
+  const ns = notasDelDia(fecha);
+  if (!ns.length) return "";
+  const corto = t => (t.length > 60 ? t.slice(0, 60) + "…" : t);
+  return `<div class="notas-semana">${ns.slice(0, 3).map(n => `<div class="postit" title="${escapeHtml(n.copy || n.titulo)}">${escapeHtml(corto(n.copy || n.titulo || ""))}</div>`).join("")}${ns.length > 3 ? `<div class="chips-mas">+${ns.length - 3} más</div>` : ""}</div>`;
 }
 
 function postsDelDia(fecha) {
@@ -1864,7 +1877,7 @@ function renderSemana() {
         <div class="columna-semana-header">${NOMBRES_DIA_CORTO[dia.getDay()]} ${dia.getDate()}</div>
         <div class="mini-pila">${pills || '<p class="tarjeta-vacio">Sin actividad</p>'}</div>
         ${resumenTiposHtml(posts)}
-        ${notasDelDia(dia).length ? `<div class="resumen-tipos" title="Notas del día">📝${notasDelDia(dia).length}</div>` : ""}
+        ${notasSemanaHtml(dia)}
       </div>`;
   }
   html += `</div>`;
@@ -1898,11 +1911,15 @@ function renderDia() {
   html += `</div>`;
   const notas = notasDelDia(estadoApp.fechaAncla);
   html += `<section class="notas-dia" aria-label="Notas del día">
-      <h3>📝 Notas del día</h3>
-      ${notas.map(n => `<div class="nota-fila"><span class="nota-texto">${escapeHtml(n.copy || n.titulo || "")}</span>
-        <button type="button" class="nota-borrar" data-id="${escapeHtml(n.id)}" aria-label="Borrar nota">✕</button></div>`).join("") || '<p class="tarjeta-vacio">Sin notas. Apunta aquí ideas para este día.</p>'}
+      <h3>Notas del día</h3>
+      <div class="notas-postits">${notas.map(n => `<div class="postit postit-grande"><span class="nota-texto">${escapeHtml(n.copy || n.titulo || "")}</span>
+        <button type="button" class="nota-borrar" data-id="${escapeHtml(n.id)}" aria-label="Borrar nota">✕</button></div>`).join("") || '<p class="tarjeta-vacio">Sin notas. Apunta aquí ideas para este día.</p>'}</div>
       <form id="form-nota" class="form-nota">
         <textarea id="nota-nueva" rows="2" maxlength="2000" placeholder="Idea o recordatorio para este día…" required></textarea>
+        <div class="nota-repite">
+          <select id="nota-repite" aria-label="Repetir"><option value="no">No se repite</option><option value="semana">Cada semana</option><option value="mes">Cada mes</option></select>
+          <select id="nota-veces" aria-label="Veces">${[2, 3, 4, 6, 8, 12].map(n => `<option value="${n}">${n} veces</option>`).join("")}</select>
+        </div>
         <button type="submit" class="btn-primario" id="nota-agregar">Agregar nota</button>
       </form>
     </section>`;
@@ -1923,15 +1940,21 @@ async function agregarNota(e) {
   boton.disabled = true;
   const dia = _inicioDia(estadoApp.fechaAncla);
   const ahora = Timestamp.now();
-  const datos = {
-    tipo: "nota", titulo: texto.slice(0, 80), copy: texto, plataformas: [], estado: "por_disenar",
-    fechaProgramada: Timestamp.fromDate(new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), 12, 0)),
-    notas: "", fuente: "Nota", destacado: false, imagenUrl: "", imagenStoragePath: "",
-    creadoEn: ahora, actualizadoEn: ahora, creadoPor: "calendario", ultimoEditor: estadoApp.usuarioUid, agencia: AGENCIA,
-  };
+  // Recurrente: se crea una nota por fecha (cada una se puede borrar sola).
+  const repite = document.getElementById("nota-repite").value;
+  const veces = repite === "no" ? 1 : Number(document.getElementById("nota-veces").value) || 1;
   try {
-    const ref = await addDoc(collection(db, "posts"), datos);
-    estadoApp.notas.push({ id: ref.id, ...datos });
+    for (let i = 0; i < veces; i++) {
+      const f = new Date(dia.getFullYear(), dia.getMonth() + (repite === "mes" ? i : 0), dia.getDate() + (repite === "semana" ? 7 * i : 0), 12, 0);
+      const datos = {
+        tipo: "nota", titulo: texto.slice(0, 80), copy: texto, plataformas: [], estado: "por_disenar",
+        fechaProgramada: Timestamp.fromDate(f),
+        notas: "", fuente: "Nota", destacado: false, imagenUrl: "", imagenStoragePath: "",
+        creadoEn: ahora, actualizadoEn: ahora, creadoPor: "calendario", ultimoEditor: estadoApp.usuarioUid, agencia: AGENCIA,
+      };
+      const ref = await addDoc(collection(db, "posts"), datos);
+      estadoApp.notas.push({ id: ref.id, ...datos });
+    }
   } catch (err) {
     console.error("Error al guardar la nota:", err);
     alert("No se guardó la nota: " + mensajeErrorFirestore(err));
